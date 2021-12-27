@@ -1,0 +1,10 @@
+function foo(){
+    print("in foo")
+    bar()
+}
+
+function bar(){
+    print("in bar")
+}
+
+foo()
