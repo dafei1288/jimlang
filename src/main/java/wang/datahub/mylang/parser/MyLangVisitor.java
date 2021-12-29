@@ -1,5 +1,5 @@
 // Generated from /Volumes/arkamu/study/codespace/mylang/src/main/resources/MyLang.g4 by ANTLR 4.9.2
-package wang.datahub.mylang;
+package wang.datahub.mylang.parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**

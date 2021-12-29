@@ -1,13 +1,10 @@
 // Generated from /Volumes/arkamu/study/codespace/mylang/src/main/resources/MyLang.g4 by ANTLR 4.9.2
-package wang.datahub.mylang;
+package wang.datahub.mylang.parser;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
 import java.util.List;
-import java.util.Iterator;
-import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class MyLangParser extends Parser {

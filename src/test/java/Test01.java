@@ -4,8 +4,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
 import org.junit.Test;
 import wang.datahub.mylang.MLVistor;
-import wang.datahub.mylang.MyLangLexer;
-import wang.datahub.mylang.MyLangParser;
+import wang.datahub.mylang.parser.MyLangLexer;
+import wang.datahub.mylang.parser.MyLangParser;
 
 import java.io.IOException;
 import java.nio.file.Files;
