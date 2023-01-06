@@ -1,0 +1,2 @@
+Manifest-Version: 1.0
+Main-Class: com.dafei1288.jimlang.Repl

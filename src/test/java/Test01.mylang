@@ -1,5 +1,8 @@
-function foo(){
+var a:Number = 10 ;
+
+function foo(a){
     print("in foo")
+    print(a)
     bar()
 }
 
@@ -7,4 +10,4 @@ function bar(){
     print("in bar")
 }
 
-foo()
+foo(a)
