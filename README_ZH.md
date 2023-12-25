@@ -1,8 +1,8 @@
 # What is JimLang
 
-Jim Lang is a programming language based on JVM with a comprehensive language system, aimed at helping everyone get started in the field of language development.
+JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮助大家入门语言开发领域。
 
-# Useage
+# 如何使用
 
 ```
     @Test
@@ -20,7 +20,7 @@ Jim Lang is a programming language based on JVM with a comprehensive language sy
     }
 ```
 
-Or use jsr-233 
+或者使用 jsr-233 方式
 
     @Test
     public void test01() throws ScriptException {
@@ -38,13 +38,14 @@ Or use jsr-233
     }
 
 
-# Devlpment
 
-## Prerequisites
+# 参与开发
+
+## 系统要求
 1. Java >= 21
 2. Maven >= 3.8 (If you want to compile and install IoTDB from source code).
 
-## Build from source
+## 代码编译
 
 `mvn clean package -DskipTest=true`
 

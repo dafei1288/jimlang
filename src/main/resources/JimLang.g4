@@ -21,7 +21,15 @@ functionCall: (sysfunction |  identifier) '(' parameterList? ')';
 
 expressionStatement: singleExpression | singleExpression ';';
 singleExpression: primary (binOP primary)* ;
-primary: ID |  NUMBER_LITERAL| STRING_LITERAL | BOOLEAN_LITERAL |  functionCall | '(' singleExpression ')' ;
+primary: identifier |  constVar |  functionCall | '(' singleExpression ')' ;
+
+constVar :
+           NUMBER_LITERAL
+         | STRING_LITERAL
+         | BOOLEAN_LITERAL
+         ;
+
+
 binOP : '+'
       | '-'
       | '*'
@@ -49,11 +57,11 @@ typeName :  'string'
 
 //TRUE: 'true';
 //FALSE: 'false';
-VAR: 'var';
-FUNCTION: 'function';
-RETURN: 'return';
-
-BOOLEAN_LITERAL: 'true' | 'false' ;
+VAR                                 : 'var';
+FUNCTION                            : 'function';
+RETURN                              : 'return';
+NEW                                 : 'new';
+BOOLEAN_LITERAL                     : 'true' | 'false' ;
 
 STRING_LITERAL: '"'[a-zA-Z0-9!@#$% "]*'"';
 NUMBER_LITERAL: [0-9]+(.)?[0-9]?;

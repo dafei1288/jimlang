@@ -1,3 +1,4 @@
+import com.dafei1288.jimlang.JimLangShell;
 import com.dafei1288.jimlang.parser.JimLangLexer;
 import com.dafei1288.jimlang.parser.JimLangParser;
 import org.antlr.v4.runtime.CharStream;
@@ -16,27 +17,42 @@ import java.util.stream.Collectors;
 
 public class Test01 {
 
+
+    @Test
+    public void T3() throws IOException{
+
+        String script = """
+                function two() { return 2 } ;
+                print( two() ) ;
+                """;
+
+        System.out.println(script);
+        System.out.println("--------------------");
+        JimLangShell shell = new JimLangShell();
+        Object ret = shell.eval(script,null);
+    }
+
     @Test
     public void T2() throws IOException {
 
         String script = """
-                var i = 11 ;
-    
-                function aa(i){
-                  return i;
-                }
-    
-                print(aa(i))
-            """;
+                    var i = 11 ;
+                    
+                    function aa(i){
+                      return i;
+                    }
+                    
+                    print(aa(i))
+                """;
         script = """
-            function two() { return 2 } ;
-            print( two() ) ;
-            """;
+                function two() { return 2 } ;
+                print( two() ) ;
+                """;
 //        script = "1 + 1 + 1 ; ";
         System.out.println(script);
         System.out.println("--------------------");
-        CharStream stream= CharStreams.fromString(script);
-        JimLangLexer lexer=new JimLangLexer(stream);
+        CharStream stream = CharStreams.fromString(script);
+        JimLangLexer lexer = new JimLangLexer(stream);
         JimLangParser parser = new JimLangParser(new CommonTokenStream(lexer));
 
         ParseTree parseTree = parser.prog();
@@ -54,8 +70,8 @@ public class Test01 {
         String expr = lines.stream().collect(Collectors.joining("\n"));
         System.out.println(expr);
         System.out.println("--------------------");
-        CharStream stream= CharStreams.fromString(expr);
-        JimLangLexer lexer=new JimLangLexer(stream);
+        CharStream stream = CharStreams.fromString(expr);
+        JimLangLexer lexer = new JimLangLexer(stream);
         JimLangParser parser = new JimLangParser(new CommonTokenStream(lexer));
 
         ParseTree parseTree = parser.prog();
@@ -64,4 +80,9 @@ public class Test01 {
         Object o = mlvistor.visit(parseTree);
 //        System.out.println(o);
     }
+
+
+
+
+
 }

@@ -12,6 +12,7 @@ public class AbstractSymbol implements Symbol {
     private String typeName;
     private Object value;
 
+    private Scope scope;
 
 
     public String getName() {
@@ -52,6 +53,14 @@ public class AbstractSymbol implements Symbol {
 
     public void setValue(Object value) {
         this.value = value;
+    }
+
+    public Scope getScope() {
+        return scope;
+    }
+
+    public void setScope(Scope scope) {
+        this.scope = scope;
     }
 
     @Override

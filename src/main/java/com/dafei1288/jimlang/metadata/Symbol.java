@@ -22,4 +22,10 @@ public interface Symbol {
   Object getValue() ;
 
   void setValue(Object value);
+
+
+  Scope getScope();
+
+  void setScope(Scope scope);
+
 }

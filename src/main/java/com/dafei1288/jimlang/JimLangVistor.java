@@ -1,5 +1,7 @@
 package com.dafei1288.jimlang;
 
+import com.dafei1288.jimlang.metadata.Scope;
+import com.dafei1288.jimlang.metadata.Scope.RootScope;
 import com.dafei1288.jimlang.metadata.StackFrane;
 import com.dafei1288.jimlang.metadata.Symbol;
 import com.dafei1288.jimlang.metadata.SymbolFunction;
@@ -8,9 +10,11 @@ import com.dafei1288.jimlang.metadata.SymbolVar;
 
 import com.dafei1288.jimlang.parser.JimLangBaseVisitor;
 import com.dafei1288.jimlang.parser.JimLangParser.AssignmentContext;
+import com.dafei1288.jimlang.parser.JimLangParser.FunctionBodyContext;
 import com.dafei1288.jimlang.parser.JimLangParser.FunctionCallContext;
 import com.dafei1288.jimlang.parser.JimLangParser.FunctionDeclContext;
 import com.dafei1288.jimlang.parser.JimLangParser.PrimaryContext;
+import com.dafei1288.jimlang.parser.JimLangParser.ProgContext;
 import com.dafei1288.jimlang.parser.JimLangParser.ReturnStatementContext;
 import com.dafei1288.jimlang.parser.JimLangParser.SingleExpressionContext;
 import com.dafei1288.jimlang.parser.JimLangParser.SysfunctionContext;
@@ -25,6 +29,13 @@ import org.antlr.v4.runtime.TokenStream;
 public class JimLangVistor extends JimLangBaseVisitor {
 //    Hashtable<String, MyLangParser.FunctionDeclContext> sympoltable = new Hashtable<>();
     Hashtable<String, Symbol> _sympoltable = new Hashtable<>();
+    Scope currentScope;
+
+    @Override
+    public Object visitProg(ProgContext ctx) {
+        currentScope = new RootScope();
+        return super.visitProg(ctx);
+    }
 
     @Override
     public Object visitVariableDecl(VariableDeclContext ctx) {
@@ -52,7 +63,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
 //                }else{
 //
 //                }
-//            }
+//            } /
 
             for(AssignmentContext assignmentContext : ctx.assignment()){
                  if(assignmentContext.singleExpression() != null &&  assignmentContext.singleExpression().primary() != null && assignmentContext.singleExpression().primary().size() > 0){
@@ -135,10 +146,20 @@ public class JimLangVistor extends JimLangBaseVisitor {
     }
 
     @Override
+    public Object visitFunctionBody(FunctionBodyContext ctx) {
+        Scope scope = new Scope();
+        currentScope.setSubScope(scope);
+
+
+        return super.visitFunctionBody(ctx);
+    }
+
+    @Override
     public Object visitReturnStatement(ReturnStatementContext ctx) {
         if(ctx.expressionStatement().singleExpression()!=null){
             return this.visitSingleExpression(ctx.expressionStatement().singleExpression());
         }
+
         return super.visitReturnStatement(ctx);
     }
 
@@ -177,7 +198,6 @@ public class JimLangVistor extends JimLangBaseVisitor {
     @Override
     public Object visitSysfunction(SysfunctionContext ctx) {
         String functionName = ctx.getText();
-
         return super.visitSysfunction(ctx);
     }
 
@@ -203,4 +223,8 @@ public class JimLangVistor extends JimLangBaseVisitor {
         }
         return super.visitFunctionCall(ctx);
     }
+
+
+
+
 }
