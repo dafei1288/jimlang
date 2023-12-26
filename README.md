@@ -4,13 +4,35 @@ Jim Lang is a programming language based on JVM with a comprehensive language sy
 
 # Useage
 
+add snapshots repository
+```xml
+<repositories>
+    <repository>
+        <id>jim</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+    </repository>
+</repositories>
+```
+
+set dependency
+```xml
+<dependency>
+    <groupId>com.dafei1288</groupId>
+    <artifactId>jimlang</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
+
 ```
     @Test
     public void T3() throws IOException{
 
         String script = """
-                function two() { return 2 } ;
-                print( two() ) ;
+                function two() { return 2 ; } ;
+                function one() { return 1 ; } ;
+                var x = one() + two() ; 
+                println("this message is from jimlang!!!")
+                println( x ) ;
                 """;
 
         System.out.println(script);
@@ -20,13 +42,17 @@ Jim Lang is a programming language based on JVM with a comprehensive language sy
     }
 ```
 
-Or use jsr-233 
+or use jsr-233
 
+```
     @Test
     public void test01() throws ScriptException {
         String script = """
-                function two() { return 2 } ;
-                print( two() ) ;
+                function two() { return 2 ; } ;
+                function one() { return 1 ; } ;
+                var x = one() + two() ; 
+                println("this message is from jimlang!!!")
+                println( x ) ;
                 """;
 
         System.out.println(script);
@@ -36,9 +62,9 @@ Or use jsr-233
         ScriptEngine engine = manager.getEngineByName("jim");
         engine.eval(script);
     }
+```
 
-
-# Devlpment
+# Development
 
 ## Prerequisites
 1. Java >= 21

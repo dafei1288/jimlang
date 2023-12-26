@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from D:/working/opensource/mylang/src/main/resources/JimLang.g4 by ANTLR 4.13.1
 package com.dafei1288.jimlang.parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -82,6 +82,12 @@ public interface JimLangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitPrimary(JimLangParser.PrimaryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#constVar}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitConstVar(JimLangParser.ConstVarContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link JimLangParser#binOP}.
 	 * @param ctx the parse tree

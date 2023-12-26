@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from D:/working/opensource/mylang/src/main/resources/JimLang.g4 by ANTLR 4.13.1
 package com.dafei1288.jimlang.parser;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -156,6 +156,18 @@ public class JimLangBaseListener implements JimLangListener {
 	 * <p>The default implementation does nothing.</p>
 	 */
 	@Override public void exitPrimary(JimLangParser.PrimaryContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterConstVar(JimLangParser.ConstVarContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitConstVar(JimLangParser.ConstVarContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *

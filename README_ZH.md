@@ -4,13 +4,35 @@ JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮�
 
 # 如何使用
 
+添加snapshots仓库
+```xml
+<repositories>
+      <repository>
+        <id>jim</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      </repository>
+</repositories>
+```
+
+引入jdbc依赖
+```xml
+<dependency>
+    <groupId>com.dafei1288</groupId>
+    <artifactId>jimlang</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
+
 ```
     @Test
     public void T3() throws IOException{
 
         String script = """
-                function two() { return 2 } ;
-                print( two() ) ;
+                function two() { return 2 ; } ;
+                function one() { return 1 ; } ;
+                var x = one() + two() ; 
+                println("this message is from jimlang!!!")
+                println( x ) ;
                 """;
 
         System.out.println(script);
@@ -22,11 +44,15 @@ JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮�
 
 或者使用 jsr-233 方式
 
+```
     @Test
     public void test01() throws ScriptException {
         String script = """
-                function two() { return 2 } ;
-                print( two() ) ;
+                function two() { return 2 ; } ;
+                function one() { return 1 ; } ;
+                var x = one() + two() ; 
+                println("this message is from jimlang!!!")
+                println( x ) ;
                 """;
 
         System.out.println(script);
@@ -36,8 +62,7 @@ JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮�
         ScriptEngine engine = manager.getEngineByName("jim");
         engine.eval(script);
     }
-
-
+```
 
 # 参与开发
 

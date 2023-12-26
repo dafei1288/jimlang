@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from D:/working/opensource/mylang/src/main/resources/JimLang.g4 by ANTLR 4.13.1
 package com.dafei1288.jimlang.parser;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
@@ -127,6 +127,16 @@ public interface JimLangListener extends ParseTreeListener {
 	 * @param ctx the parse tree
 	 */
 	void exitPrimary(JimLangParser.PrimaryContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link JimLangParser#constVar}.
+	 * @param ctx the parse tree
+	 */
+	void enterConstVar(JimLangParser.ConstVarContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link JimLangParser#constVar}.
+	 * @param ctx the parse tree
+	 */
+	void exitConstVar(JimLangParser.ConstVarContext ctx);
 	/**
 	 * Enter a parse tree produced by {@link JimLangParser#binOP}.
 	 * @param ctx the parse tree

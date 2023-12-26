@@ -9,6 +9,7 @@ import com.dafei1288.jimlang.metadata.SymbolType;
 import com.dafei1288.jimlang.metadata.SymbolVar;
 
 import com.dafei1288.jimlang.parser.JimLangBaseVisitor;
+import com.dafei1288.jimlang.parser.JimLangParser;
 import com.dafei1288.jimlang.parser.JimLangParser.AssignmentContext;
 import com.dafei1288.jimlang.parser.JimLangParser.FunctionBodyContext;
 import com.dafei1288.jimlang.parser.JimLangParser.FunctionCallContext;
@@ -66,17 +67,10 @@ public class JimLangVistor extends JimLangBaseVisitor {
 //            } /
 
             for(AssignmentContext assignmentContext : ctx.assignment()){
-                 if(assignmentContext.singleExpression() != null &&  assignmentContext.singleExpression().primary() != null && assignmentContext.singleExpression().primary().size() > 0){
-                    SingleExpressionContext singleExpressionContext = assignmentContext.singleExpression();
-                    PrimaryContext primaryContext = singleExpressionContext.primary(0);
-                    if(primaryContext.NUMBER_LITERAL() != null){
-                        symbol.setValue(Integer.parseInt(primaryContext.NUMBER_LITERAL().getText().trim()));
-                    }else if(primaryContext.STRING_LITERAL() != null){
-                        symbol.setValue(primaryContext.STRING_LITERAL().getText());
-                    }else{
-
-                    }
-                }
+                 if(assignmentContext.expressionStatement() != null ){
+                    Object o = this.visitExpressionStatement(assignmentContext.expressionStatement());
+                    symbol.setValue(o);
+                 }
             }
 
             _sympoltable.put(varName,symbol);
@@ -86,27 +80,52 @@ public class JimLangVistor extends JimLangBaseVisitor {
     }
 
     @Override
-    public Object visitSingleExpression(SingleExpressionContext ctx) {
-        PrimaryContext primaryContext = ctx.primary(0);
-        if(_sympoltable.get(primaryContext.getText())!=null){
-            return _sympoltable.get(primaryContext.getText().trim()).getValue();
-        }
-        if(primaryContext.NUMBER_LITERAL() != null){
-            return Integer.parseInt(primaryContext.NUMBER_LITERAL().getText().trim());
-        }else if(primaryContext.STRING_LITERAL() != null){
-            String text = primaryContext.STRING_LITERAL().getText();
+    public Object visitConstVar(JimLangParser.ConstVarContext ctx) {
+
+        if(ctx.NUMBER_LITERAL() != null){
+            return Integer.parseInt(ctx.NUMBER_LITERAL().getText().trim());
+        }else if(ctx.STRING_LITERAL() != null){
+            String text = ctx.STRING_LITERAL().getText();
             if(text.startsWith("\"")){
                 text = text.substring(1,text.length()-1);
             }
             return text;
-        }else if(primaryContext.BOOLEAN_LITERAL() != null){
-            return Boolean.valueOf(primaryContext.BOOLEAN_LITERAL().getText());
-//            return this.visitBooleanType(primaryContext.booleanType());
+        }else if(ctx.BOOLEAN_LITERAL() != null){
+            return Boolean.valueOf(ctx.BOOLEAN_LITERAL().getText().trim());
         }
+        return super.visitConstVar(ctx);
+    }
+
+    @Override
+    public Object visitSingleExpression(SingleExpressionContext ctx) {
+        PrimaryContext primaryContext = ctx.primary(0);
+        if(primaryContext.constVar()!=null){
+            return this.visitConstVar(primaryContext.constVar());
+        }
+        if(_sympoltable.get(primaryContext.getText())!=null){
+            return _sympoltable.get(primaryContext.getText().trim()).getValue();
+        }
+
+
+
         return super.visitSingleExpression(ctx);
     }
 
-
+    @Override
+    public Object visitPrimary(PrimaryContext ctx) {
+        if(ctx.identifier() != null){
+            String varName = ctx.identifier().getText();
+            Symbol currentSymbol = _sympoltable.get(varName);
+            if(currentSymbol != null){
+                return currentSymbol.getValue();
+            }
+        }
+        if(ctx.constVar() != null){
+            Object o = this.visitConstVar(ctx.constVar());
+            return o;
+        }
+        return super.visitPrimary(ctx);
+    }
 
     @Override
     public Object visitFunctionDecl(FunctionDeclContext ctx) {
@@ -146,6 +165,60 @@ public class JimLangVistor extends JimLangBaseVisitor {
     }
 
     @Override
+    public Object visitExpressionStatement(JimLangParser.ExpressionStatementContext ctx) {
+
+        if(ctx.binOP()==null){
+            if(_sympoltable.contains(ctx.getText())){
+                return _sympoltable.get(ctx.getText()).getValue();
+            }else{
+                if(ctx.singleExpression(0).binOP()!=null){
+                    String left = ctx.singleExpression(0).primary(0).getText().trim();
+                    String right = ctx.singleExpression(0).primary(1).getText().trim();
+                    String op = ctx.singleExpression(0).binOP().getText().trim();
+                    Object leftObject = null;
+                    if(_sympoltable.contains(left)){
+                        leftObject = _sympoltable.get(left).getValue();
+                    }else{
+                        leftObject = this.visitPrimary(ctx.singleExpression(0).primary(0));
+                    }
+                    Object rightObject = null;
+                    if(_sympoltable.contains(right)){
+                        rightObject = _sympoltable.get(right).getValue();
+                    }else {
+                        rightObject = this.visitPrimary(ctx.singleExpression(0).primary(1));
+                    }
+                    if("+".equals(op)){
+                        return (Integer)leftObject + (Integer)rightObject;
+                    }
+                }
+
+                return this.visitSingleExpression(ctx.singleExpression(0));
+            }
+        }else{
+            String left = ctx.singleExpression(0).getText().trim();
+            String right = ctx.singleExpression(1).getText().trim();
+            String op = ctx.binOP().getText().trim();
+            Object leftObject = null;
+            if(_sympoltable.contains(left)){
+                leftObject = _sympoltable.get(left).getValue();
+            }else{
+                leftObject = this.visitSingleExpression(ctx.singleExpression(0));
+            }
+            Object rightObject = null;
+            if(_sympoltable.contains(right)){
+                rightObject = _sympoltable.get(right).getValue();
+            }else {
+                rightObject = this.visitSingleExpression(ctx.singleExpression(1));
+            }
+            if("+".equals(op)){
+                return (Integer)leftObject + (Integer)rightObject;
+            }
+        }
+
+        return null;
+    }
+
+    @Override
     public Object visitFunctionBody(FunctionBodyContext ctx) {
         Scope scope = new Scope();
         currentScope.setSubScope(scope);
@@ -156,11 +229,8 @@ public class JimLangVistor extends JimLangBaseVisitor {
 
     @Override
     public Object visitReturnStatement(ReturnStatementContext ctx) {
-        if(ctx.expressionStatement().singleExpression()!=null){
-            return this.visitSingleExpression(ctx.expressionStatement().singleExpression());
-        }
-
-        return super.visitReturnStatement(ctx);
+        return this.visitExpressionStatement(ctx.expressionStatement());
+//        return super.visitReturnStatement(ctx);
     }
 
     @Override

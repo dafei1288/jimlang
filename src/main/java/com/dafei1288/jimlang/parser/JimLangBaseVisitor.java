@@ -1,4 +1,4 @@
-// Generated from java-escape by ANTLR 4.11.1
+// Generated from D:/working/opensource/mylang/src/main/resources/JimLang.g4 by ANTLR 4.13.1
 package com.dafei1288.jimlang.parser;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -96,6 +96,13 @@ public class JimLangBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
 	@Override public T visitPrimary(JimLangParser.PrimaryContext ctx) { return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override public T visitConstVar(JimLangParser.ConstVarContext ctx) { return visitChildren(ctx); }
 	/**
 	 * {@inheritDoc}
 	 *
