@@ -1,4 +1,4 @@
-// Generated from D:/working/opensource/mylang/src/main/resources/JimLang.g4 by ANTLR 4.13.1
+// Generated from com/dafei1288/jimlang/parser/JimLang.g4 by ANTLR 4.13.1
 package com.dafei1288.jimlang.parser;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -29,11 +29,65 @@ public interface JimLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAssignment(JimLangParser.AssignmentContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link JimLangParser#assignmentStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitAssignmentStatement(JimLangParser.AssignmentStatementContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link JimLangParser#returnStatement}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitReturnStatement(JimLangParser.ReturnStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#ifStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitIfStatement(JimLangParser.IfStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#whileStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitWhileStatement(JimLangParser.WhileStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#forStatement}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForStatement(JimLangParser.ForStatementContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#forInit}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForInit(JimLangParser.ForInitContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#forCondition}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForCondition(JimLangParser.ForConditionContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#forUpdate}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitForUpdate(JimLangParser.ForUpdateContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#block}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBlock(JimLangParser.BlockContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#expression}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitExpression(JimLangParser.ExpressionContext ctx);
 	/**
 	 * Visit a parse tree produced by {@link JimLangParser#variableDecl}.
 	 * @param ctx the parse tree

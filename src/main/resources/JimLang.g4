@@ -6,22 +6,43 @@ grammar JimLang;
 
 prog:  statementList? EOF;
 
-statementList : ( variableDecl | functionDecl | functionCall | expressionStatement  )* ;
+statementList : ( variableDecl | functionDecl | functionCall | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement )* ;
 
-assignment: '=' expressionStatement ;
+assignment: '=' expression ';'? ;
 
-returnStatement: RETURN  expressionStatement ;
+// 独立的赋值语句 (如 i = i + 1)
+assignmentStatement: identifier '=' expression ';'? ;
+
+returnStatement: RETURN expression ';'? ;
+
+// if/else 条件语句
+ifStatement: IF '(' expression ')' block (ELSE block)? ;
+
+// while 循环
+whileStatement: WHILE '(' expression ')' block ;
+
+// for 循环
+forStatement: FOR '(' forInit? ';' forCondition? ';' forUpdate? ')' block ;
+forInit: variableDecl | assignmentStatement ;
+forCondition: expression ;
+forUpdate: assignmentStatement ;
+
+// 代码块
+block: '{' statementList? '}' ;
+
+// 表达式（用于条件判断）
+expression: singleExpression (binOP singleExpression)? ;
 
 variableDecl : VAR identifier typeAnnotation? ( assignment )* ;
 typeAnnotation : ':' typeName;
 
-functionDecl: FUNCTION identifier B_OPEN parameterList? B_CLOSE functionBody ';' ;
+functionDecl: FUNCTION identifier B_OPEN parameterList? B_CLOSE functionBody ';'? ;
 //functionName: identifier;
 
 functionBody: C_OPEN statementList?  returnStatement? C_CLOSE;
 functionCall: (sysfunction |  identifier) '(' parameterList? ')';
 
-expressionStatement: singleExpression (binOP singleExpression)? ';';
+expressionStatement: expression ';'? ;
 
 singleExpression: primary (binOP primary)? ;
 
@@ -38,12 +59,12 @@ binOP : ADD
       | SUB
       | MUL
       | DIV
-      | ASSIGN
       | GT
       | GE
       | LT
       | LE
       | EQ
+      | NE
       ;
 
 //booleanType: TRUE | FALSE ;
@@ -68,10 +89,14 @@ VAR                                 : 'var';
 FUNCTION                            : 'function';
 RETURN                              : 'return';
 NEW                                 : 'new';
+IF                                  : 'if';
+ELSE                                : 'else';
+WHILE                               : 'while';
+FOR                                 : 'for';
 BOOLEAN_LITERAL                     : 'true' | 'false' ;
 
-STRING_LITERAL: '"'[a-zA-Z0-9!@#$% "]*'"';
-NUMBER_LITERAL: [0-9]+(.)?[0-9]?;
+STRING_LITERAL: '"' (~["\r\n])* '"';
+NUMBER_LITERAL: [0-9]+ ('.' [0-9]+)?;
 
 
 ID  :   [a-zA-Z_][a-zA-Z0-9_]*;
