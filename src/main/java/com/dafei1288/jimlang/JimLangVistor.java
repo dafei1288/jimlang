@@ -25,12 +25,20 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import java.util.Hashtable;
+import java.util.Collections;
 import org.antlr.v4.runtime.TokenStream;
 
 public class JimLangVistor extends JimLangBaseVisitor {
 //    Hashtable<String, MyLangParser.FunctionDeclContext> sympoltable = new Hashtable<>();
     Hashtable<String, Symbol> _sympoltable = new Hashtable<>();
     Scope currentScope;
+
+    /**
+     * ???????????REPL ????????????
+     */
+    public Hashtable<String, Symbol> getSymbolTable() {
+        return _sympoltable;
+    }
 
     @Override
     public Object visitProg(ProgContext ctx) {
@@ -41,12 +49,11 @@ public class JimLangVistor extends JimLangBaseVisitor {
     @Override
     public Object visitVariableDecl(VariableDeclContext ctx) {
         String varName = ctx.identifier().getText();
-        if(_sympoltable.get(varName) == null){
+        SymbolVar symbol = (SymbolVar) _sympoltable.get(varName);
 
-//            System.out.println("define var ==> "+varName);
-//            sympoltable.put(ctx.identifier().getText(),ctx);
-
-            SymbolVar symbol = new SymbolVar();
+        if(symbol == null){
+            // ????????
+            symbol = new SymbolVar();
             symbol.setName(varName);
             symbol.setParseTree(ctx);
 
@@ -54,36 +61,51 @@ public class JimLangVistor extends JimLangBaseVisitor {
                 symbol.setTypeName(ctx.typeAnnotation().typeName().getText());
             }
 
-//            if(ctx.singleExpression() != null &&  ctx.singleExpression().primary() != null && ctx.singleExpression().primary().size() > 0){
-//                SingleExpressionContext singleExpressionContext = ctx.singleExpression();
-//                PrimaryContext primaryContext = singleExpressionContext.primary(0);
-//                if(primaryContext.NUMBER_LITERAL() != null){
-//                    symbol.setValue(Integer.parseInt(primaryContext.NUMBER_LITERAL().getText().trim()));
-//                }else if(primaryContext.STRING_LITERAL() != null){
-//                    symbol.setValue(primaryContext.STRING_LITERAL().getText());
-//                }else{
-//
-//                }
-//            } /
-
-            for(AssignmentContext assignmentContext : ctx.assignment()){
-                 if(assignmentContext.expressionStatement() != null ){
-                    Object o = this.visitExpressionStatement(assignmentContext.expressionStatement());
-                    symbol.setValue(o);
-                 }
-            }
-
             _sympoltable.put(varName,symbol);
         }
 
-        return super.visitVariableDecl(ctx);
+        // ??????????????????????????????
+        for(AssignmentContext assignmentContext : ctx.assignment()){
+             if(assignmentContext.expression() != null ){
+                Object o = this.visitExpression(assignmentContext.expression());
+                symbol.setValue(o);
+             }
+        }
+
+        // ?????super???????????
+        return null;
+    }
+
+    @Override
+    public Object visitAssignmentStatement(JimLangParser.AssignmentStatementContext ctx) {
+        String varName = ctx.identifier().getText();
+
+        // ??????????????
+        Symbol symbol = _sympoltable.get(varName);
+        if (symbol == null) {
+            throw new RuntimeException("Variable '" + varName + "' is not defined");
+        }
+
+        // ???????
+        Object newValue = this.visit(ctx.expression());
+
+        // ????????
+        symbol.setValue(newValue);
+
+        return newValue;
     }
 
     @Override
     public Object visitConstVar(JimLangParser.ConstVarContext ctx) {
 
         if(ctx.NUMBER_LITERAL() != null){
-            return Integer.parseInt(ctx.NUMBER_LITERAL().getText().trim());
+            String numText = ctx.NUMBER_LITERAL().getText().trim();
+            // ??????????????????????????Double?????? Integer
+            if(numText.contains(".")){
+                return Double.parseDouble(numText);
+            }else{
+                return Integer.parseInt(numText);
+            }
         }else if(ctx.STRING_LITERAL() != null){
             String text = ctx.STRING_LITERAL().getText();
             if(text.startsWith("\"")){
@@ -98,15 +120,26 @@ public class JimLangVistor extends JimLangBaseVisitor {
 
     @Override
     public Object visitSingleExpression(SingleExpressionContext ctx) {
+        // Check if this is a binary operation
+        if (ctx.binOP() != null && ctx.primary().size() > 1) {
+            // Binary operation: primary binOP primary
+            Object left = this.visitPrimary(ctx.primary(0));
+            Object right = this.visitPrimary(ctx.primary(1));
+            String op = ctx.binOP().getText().trim();
+            return executeBinaryOperation(left, right, op);
+        }
+
+        // Single primary
         PrimaryContext primaryContext = ctx.primary(0);
         if(primaryContext.constVar()!=null){
             return this.visitConstVar(primaryContext.constVar());
         }
+        if(primaryContext.functionCall() != null){
+            return this.visitFunctionCall(primaryContext.functionCall());
+        }
         if(_sympoltable.get(primaryContext.getText())!=null){
             return _sympoltable.get(primaryContext.getText().trim()).getValue();
         }
-
-
 
         return super.visitSingleExpression(ctx);
     }
@@ -123,6 +156,10 @@ public class JimLangVistor extends JimLangBaseVisitor {
         if(ctx.constVar() != null){
             Object o = this.visitConstVar(ctx.constVar());
             return o;
+        }
+        if(ctx.functionCall() != null){
+            // ????????????
+            return this.visitFunctionCall(ctx.functionCall());
         }
         return super.visitPrimary(ctx);
     }
@@ -150,72 +187,90 @@ public class JimLangVistor extends JimLangBaseVisitor {
 
             if(ctx.functionBody() != null){
                 symbol.setFunctionBody(ctx.functionBody().getText());
-                if(ctx.functionBody().returnStatement() != null){
-                    Object o = this.visitReturnStatement(ctx.functionBody().returnStatement());
-                    symbol.setValue(o);
-                }
+                // ?????????????????????????????????
             }
 
 //            if(ctx.functionBody().)
             _sympoltable.put(functionName,symbol);
 //            return null;
         }
-        //return null;
-        return super.visitFunctionDecl(ctx);
+
+        // ?????super.visitFunctionDecl??????????????????
+        return null;
+    }
+
+    /**
+     * ???????????????????????
+     */
+    private Object executeBinaryOperation(Object left, Object right, String op) {
+        // ????????
+        if ("+".equals(op) && (left instanceof String || right instanceof String)) {
+            return String.valueOf(left) + String.valueOf(right);
+        }
+
+        // ???????
+        if (left instanceof Number && right instanceof Number) {
+            // ???????????? Double?????? Double
+            if (left instanceof Double || right instanceof Double) {
+                double l = ((Number) left).doubleValue();
+                double r = ((Number) right).doubleValue();
+
+                switch (op) {
+                    case "+": return l + r;
+                    case "-": return l - r;
+                    case "*": return l * r;
+                    case "/":
+                        if (r == 0) throw new RuntimeException("Division by zero");
+                        return l / r;
+                    case "%": return l % r;
+                    case ">": return l > r;
+                    case "<": return l < r;
+                    case ">=": return l >= r;
+                    case "<=": return l <= r;
+                    case "==": return l == r;
+                    case "!=": return l != r;
+                    default: throw new RuntimeException("Unknown operator: " + op);
+                }
+            } else {
+                // ??????
+                int l = ((Number) left).intValue();
+                int r = ((Number) right).intValue();
+
+                switch (op) {
+                    case "+": return l + r;
+                    case "-": return l - r;
+                    case "*": return l * r;
+                    case "/":
+                        if (r == 0) throw new RuntimeException("Division by zero");
+                        return l / r;
+                    case "%": return l % r;
+                    case ">": return l > r;
+                    case "<": return l < r;
+                    case ">=": return l >= r;
+                    case "<=": return l <= r;
+                    case "==": return l == r;
+                    case "!=": return l != r;
+                    default: throw new RuntimeException("Unknown operator: " + op);
+                }
+            }
+        }
+
+        // ??????
+        if ("==".equals(op)) {
+            return left.equals(right);
+        }
+        if ("!=".equals(op)) {
+            return !left.equals(right);
+        }
+
+        throw new RuntimeException("Cannot perform operation " + op + " on types " +
+            left.getClass().getSimpleName() + " and " + right.getClass().getSimpleName());
     }
 
     @Override
     public Object visitExpressionStatement(JimLangParser.ExpressionStatementContext ctx) {
-
-        if(ctx.binOP()==null){
-            if(_sympoltable.contains(ctx.getText())){
-                return _sympoltable.get(ctx.getText()).getValue();
-            }else{
-                if(ctx.singleExpression(0).binOP()!=null){
-                    String left = ctx.singleExpression(0).primary(0).getText().trim();
-                    String right = ctx.singleExpression(0).primary(1).getText().trim();
-                    String op = ctx.singleExpression(0).binOP().getText().trim();
-                    Object leftObject = null;
-                    if(_sympoltable.contains(left)){
-                        leftObject = _sympoltable.get(left).getValue();
-                    }else{
-                        leftObject = this.visitPrimary(ctx.singleExpression(0).primary(0));
-                    }
-                    Object rightObject = null;
-                    if(_sympoltable.contains(right)){
-                        rightObject = _sympoltable.get(right).getValue();
-                    }else {
-                        rightObject = this.visitPrimary(ctx.singleExpression(0).primary(1));
-                    }
-                    if("+".equals(op)){
-                        return (Integer)leftObject + (Integer)rightObject;
-                    }
-                }
-
-                return this.visitSingleExpression(ctx.singleExpression(0));
-            }
-        }else{
-            String left = ctx.singleExpression(0).getText().trim();
-            String right = ctx.singleExpression(1).getText().trim();
-            String op = ctx.binOP().getText().trim();
-            Object leftObject = null;
-            if(_sympoltable.contains(left)){
-                leftObject = _sympoltable.get(left).getValue();
-            }else{
-                leftObject = this.visitSingleExpression(ctx.singleExpression(0));
-            }
-            Object rightObject = null;
-            if(_sympoltable.contains(right)){
-                rightObject = _sympoltable.get(right).getValue();
-            }else {
-                rightObject = this.visitSingleExpression(ctx.singleExpression(1));
-            }
-            if("+".equals(op)){
-                return (Integer)leftObject + (Integer)rightObject;
-            }
-        }
-
-        return null;
+        // ?????? expression
+        return this.visitExpression(ctx.expression());
     }
 
     @Override
@@ -228,8 +283,177 @@ public class JimLangVistor extends JimLangBaseVisitor {
     }
 
     @Override
+    public Object visitIfStatement(JimLangParser.IfStatementContext ctx) {
+        // 1. ???????????
+        Object conditionValue = this.visit(ctx.expression());
+
+        // 2. ????????????????
+        boolean condition = false;
+        if (conditionValue instanceof Boolean) {
+            condition = (Boolean) conditionValue;
+        } else if (conditionValue instanceof Number) {
+            // ????? ??false?????? true
+            condition = ((Number) conditionValue).doubleValue() != 0;
+        } else if (conditionValue instanceof String) {
+            // ??????????????false?????? true
+            condition = !((String) conditionValue).isEmpty();
+        } else if (conditionValue != null) {
+            // ?????null ??? true
+            condition = true;
+        }
+
+        // 3. ???????????????
+        if (condition) {
+            return this.visit(ctx.block(0));
+        } else if (ctx.block().size() > 1) {
+            // ??? else ???????????
+            return this.visit(ctx.block(1));
+        }
+
+        return null;
+    }
+
+    @Override
+    public Object visitWhileStatement(JimLangParser.WhileStatementContext ctx) {
+        // ??????????????????????????
+        final int MAX_ITERATIONS = 100000;
+        int iterations = 0;
+
+        // ??????????????-> ????????
+        while (true) {
+            // ?????????????
+            if (iterations >= MAX_ITERATIONS) {
+                throw new RuntimeException("While loop exceeded maximum iterations (" + MAX_ITERATIONS + "). Possible infinite loop.");
+            }
+
+            // 1. ???????????
+            Object conditionValue = this.visit(ctx.expression());
+
+            // 2. ????????????????
+            boolean condition = false;
+            if (conditionValue instanceof Boolean) {
+                condition = (Boolean) conditionValue;
+            } else if (conditionValue instanceof Number) {
+                // ????? ??false?????? true
+                condition = ((Number) conditionValue).doubleValue() != 0;
+            } else if (conditionValue instanceof String) {
+                // ??????????????false?????? true
+                condition = !((String) conditionValue).isEmpty();
+            } else if (conditionValue != null) {
+                // ?????null ??? true
+                condition = true;
+            }
+
+            // 3. ??????????????????
+            if (!condition) {
+                break;
+            }
+
+            // 4. ????????
+            this.visit(ctx.block());
+
+            iterations++;
+        }
+
+        return null;
+    }
+
+    @Override
+    public Object visitForStatement(JimLangParser.ForStatementContext ctx) {
+        // ??????????????????????????
+        final int MAX_ITERATIONS = 100000;
+        int iterations = 0;
+
+        // 1. ?????????????????
+        if (ctx.forInit() != null) {
+            this.visit(ctx.forInit());
+        }
+
+        // 2. ??????
+        while (true) {
+            // ?????????????
+            if (iterations >= MAX_ITERATIONS) {
+                throw new RuntimeException("For loop exceeded maximum iterations (" + MAX_ITERATIONS + "). Possible infinite loop.");
+            }
+
+            // 3. ????????????????
+            if (ctx.forCondition() != null) {
+                Object conditionValue = this.visit(ctx.forCondition());
+
+                // ????????????????
+                boolean condition = false;
+                if (conditionValue instanceof Boolean) {
+                    condition = (Boolean) conditionValue;
+                } else if (conditionValue instanceof Number) {
+                    condition = ((Number) conditionValue).doubleValue() != 0;
+                } else if (conditionValue instanceof String) {
+                    condition = !((String) conditionValue).isEmpty();
+                } else if (conditionValue != null) {
+                    condition = true;
+                }
+
+                // ??????????????????
+                if (!condition) {
+                    break;
+                }
+            }
+
+            // 4. ????????
+            this.visit(ctx.block());
+
+            // 5. ??????????????????
+            if (ctx.forUpdate() != null) {
+                this.visit(ctx.forUpdate());
+            }
+
+            iterations++;
+        }
+
+        return null;
+    }
+
+    @Override
+    public Object visitBlock(JimLangParser.BlockContext ctx) {
+        // ??????????????
+        if (ctx.statementList() != null) {
+            return this.visit(ctx.statementList());
+        }
+        return null;
+    }
+
+    @Override
+    public Object visitExpression(JimLangParser.ExpressionContext ctx) {
+        // ???????????expressionStatement ??????????????
+        if (ctx.binOP() == null) {
+            // ????????
+            return this.visitSingleExpression(ctx.singleExpression(0));
+        } else {
+            // ??????
+            String left = ctx.singleExpression(0).getText().trim();
+            String right = ctx.singleExpression(1).getText().trim();
+            String op = ctx.binOP().getText().trim();
+
+            Object leftObject = null;
+            if (_sympoltable.containsKey(left)) {
+                leftObject = _sympoltable.get(left).getValue();
+            } else {
+                leftObject = this.visitSingleExpression(ctx.singleExpression(0));
+            }
+
+            Object rightObject = null;
+            if (_sympoltable.containsKey(right)) {
+                rightObject = _sympoltable.get(right).getValue();
+            } else {
+                rightObject = this.visitSingleExpression(ctx.singleExpression(1));
+            }
+
+            return executeBinaryOperation(leftObject, rightObject, op);
+        }
+    }
+
+    @Override
     public Object visitReturnStatement(ReturnStatementContext ctx) {
-        return this.visitExpressionStatement(ctx.expressionStatement());
+        return this.visitExpression(ctx.expression());
 //        return super.visitReturnStatement(ctx);
     }
 
@@ -237,30 +461,86 @@ public class JimLangVistor extends JimLangBaseVisitor {
     public Object visitFunctionCall(FunctionCallContext ctx) {
         String functionName = null;
 
-        if(ctx.parameterList() != null){
-            this.visitParameterList(ctx.parameterList());
-        }
-
+        // ???????????? print, println??
         if(ctx.sysfunction() != null){
             functionName = ctx.sysfunction().getText();
-//            System.out.println(functionName);
             List<Object> all = ctx.parameterList().singleExpression().stream().map(it->{
                 return this.visitSingleExpression(it);
-                                                                        }).collect(Collectors.toList());
+            }).collect(Collectors.toList());
             return Funcall.exec(functionName,all);
         }
 
+        // ?????????????????
         if(ctx.identifier() != null){
             functionName = ctx.identifier().getText();
-
         }
 
-
+        // ?????????
         SymbolFunction currentSymbol = (SymbolFunction) _sympoltable.get(functionName);
+        // Built-in function invoked as identifier (fast path)
+        if(currentSymbol == null && Funcall.isSysFunction(functionName)){
+            java.util.List<Object> all = null;
+            if(ctx.parameterList() != null && ctx.parameterList().singleExpression() != null){
+                all = ctx.parameterList().singleExpression().stream().map(it->{
+                    return this.visitSingleExpression(it);
+                }).collect(java.util.stream.Collectors.toList());
+            }else{
+                all = java.util.Collections.emptyList();
+            }
+            return Funcall.exec(functionName,all);
+        }
+
         if(currentSymbol != null){
-//            System.out.println("call function ==> "+currentSymbol.getName());
             StackFrane stackFrane = new StackFrane(currentSymbol,functionName);
-            return currentSymbol.getValue();
+
+            // 1. ???????????
+            List<Object> actualParams = null;
+            if(ctx.parameterList() != null && ctx.parameterList().singleExpression() != null){
+                actualParams = ctx.parameterList().singleExpression().stream().map(it->{
+                    return this.visitSingleExpression(it);
+                }).collect(Collectors.toList());
+            }
+
+            // 2. ????????????
+            List<String> formalParams = currentSymbol.getParameterList();
+
+            // 3. ???????????
+            Hashtable<String, Symbol> savedSymbolTable = new Hashtable<>(_sympoltable);
+
+            // 4. ????????????????????????
+            if(formalParams != null && actualParams != null){
+                if(formalParams.size() != actualParams.size()){
+                    throw new RuntimeException("Function " + functionName + " expects " +
+                        formalParams.size() + " arguments but got " + actualParams.size());
+                }
+
+                for(int i = 0; i < formalParams.size(); i++){
+                    SymbolVar paramVar = new SymbolVar();
+                    paramVar.setName(formalParams.get(i));
+                    paramVar.setValue(actualParams.get(i));
+                    _sympoltable.put(formalParams.get(i), paramVar);
+                }
+            }
+
+            // 5. ????????
+            Object result = null;
+            FunctionDeclContext funcDecl = (FunctionDeclContext) currentSymbol.getParseTree();
+            if(funcDecl != null && funcDecl.functionBody() != null){
+                // ????????????????????? for ??????????????
+                if(funcDecl.functionBody().statementList() != null){
+                    this.visit(funcDecl.functionBody().statementList());
+                }
+
+                // ?????return ????????????
+                if(funcDecl.functionBody().returnStatement() != null){
+                    result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
+                }
+            }
+
+            // 6. ????????????????????????
+            _sympoltable = savedSymbolTable;
+
+            return result;
         }
         return super.visitFunctionCall(ctx);
     }
@@ -298,3 +578,9 @@ public class JimLangVistor extends JimLangBaseVisitor {
 
 
 }
+
+
+
+
+
+
