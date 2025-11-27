@@ -1,0 +1,28 @@
+// 测试可选分号语法
+
+// 1. 不使用分号的变量声明
+var x = 10
+var y = 20
+var sum = x + y
+
+// 2. 不使用分号的函数定义
+function add(a, b) {
+    return a + b
+}
+
+// 3. 不使用分号的函数调用
+println(add(x, y))
+println(sum)
+
+// 4. 混合使用（同行多语句需要分号）
+var a = 1 ; var b = 2 ; println(a + b)
+
+// 5. 字符串和浮点数
+var name = "JimLang"
+var pi = 3.14
+println(name)
+println(pi)
+
+// 6. 复杂表达式
+var result = 10 * 5 + 3
+println(result)

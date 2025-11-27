@@ -1,0 +1,52 @@
+// Test 1: 函数参数传递
+function add(a, b) {
+    return a + b
+}
+println("Test 1 - Function params:")
+println(add(5, 3))
+
+// Test 2: 完整算术运算
+println("\nTest 2 - Arithmetic operations:")
+var x = 10 + 5
+println(x)
+var y = 10 - 3
+println(y)
+var z = 4 * 5
+println(z)
+var w = 20 / 4
+println(w)
+var m = 10 % 3
+println(m)
+
+// Test 3: 浮点数
+println("\nTest 3 - Float numbers:")
+var f1 = 3.14
+println(f1)
+var f2 = 10.5 + 2.3
+println(f2)
+
+// Test 4: 字符串拼接
+println("\nTest 4 - String concatenation:")
+var s1 = "Hello " + "World"
+println(s1)
+var s2 = "The answer is " + 42
+println(s2)
+
+// Test 5: 比较运算符
+println("\nTest 5 - Comparison operators:")
+var c1 = 5 > 3
+println(c1)
+var c2 = 5 < 3
+println(c2)
+var c3 = 5 == 5
+println(c3)
+
+// Test 6: 带参数的复杂函数
+println("\nTest 6 - Complex function:")
+function multiply(x, y) {
+    return x * y
+}
+var result = multiply(6, 7)
+println(result)
+
+println("\nAll tests completed!")

@@ -1,0 +1,143 @@
+// ====== if/else 条件语句测试 ======
+
+// Test 1: 基本 if/else
+println("=== Test 1: Basic if/else ===")
+var score = 85
+if (score >= 90) {
+    println("Grade: A")
+} else {
+    println("Grade: Not A")
+}
+
+// Test 2: if 条件为真
+println("\n=== Test 2: if condition true ===")
+var x = 10
+if (x > 5) {
+    println("x is greater than 5")
+}
+
+// Test 3: if 条件为假（无 else）
+println("\n=== Test 3: if condition false (no else) ===")
+var y = 3
+if (y > 5) {
+    println("This should not print")
+}
+println("After if statement")
+
+// Test 4: 嵌套 if/else
+println("\n=== Test 4: Nested if/else ===")
+var grade = 75
+if (grade >= 90) {
+    println("Excellent")
+} else {
+    if (grade >= 80) {
+        println("Good")
+    } else {
+        if (grade >= 70) {
+            println("Fair")
+        } else {
+            println("Need improvement")
+        }
+    }
+}
+
+// Test 5: 比较运算符测试
+println("\n=== Test 5: Comparison operators ===")
+var a = 5
+var b = 10
+
+if (a < b) {
+    println("5 < 10: true")
+}
+
+if (a <= 5) {
+    println("5 <= 5: true")
+}
+
+if (b > a) {
+    println("10 > 5: true")
+}
+
+if (b >= 10) {
+    println("10 >= 10: true")
+}
+
+if (a == 5) {
+    println("5 == 5: true")
+}
+
+if (a != b) {
+    println("5 != 10: true")
+}
+
+// Test 6: 布尔值条件
+println("\n=== Test 6: Boolean conditions ===")
+var isTrue = true
+var isFalse = false
+
+if (isTrue) {
+    println("isTrue is true")
+}
+
+if (isFalse) {
+    println("This should not print")
+} else {
+    println("isFalse is false")
+}
+
+// Test 7: 数字条件（非零为真）
+println("\n=== Test 7: Number as condition ===")
+var zero = 0
+var nonZero = 42
+
+if (nonZero) {
+    println("42 is truthy")
+}
+
+if (zero) {
+    println("This should not print")
+} else {
+    println("0 is falsy")
+}
+
+// Test 8: 字符串条件
+println("\n=== Test 8: String as condition ===")
+var emptyStr = ""
+var nonEmptyStr = "Hello"
+
+if (nonEmptyStr) {
+    println("Non-empty string is truthy")
+}
+
+if (emptyStr) {
+    println("This should not print")
+} else {
+    println("Empty string is falsy")
+}
+
+// Test 9: if/else 中的函数调用
+println("\n=== Test 9: Function calls in if/else ===")
+function isPositive(n) {
+    return n > 0
+}
+
+var num = 15
+if (isPositive(num)) {
+    println("15 is positive")
+} else {
+    println("15 is not positive")
+}
+
+// Test 10: if/else 中的变量赋值
+println("\n=== Test 10: Variable assignment in if/else ===")
+var result = 0
+var value = 8
+
+if (value > 5) {
+    result = 100
+} else {
+    result = 50
+}
+println("Result: " + result)
+
+println("\n=== All if/else tests completed! ===")
