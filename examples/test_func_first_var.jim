@@ -1,0 +1,6 @@
+function add(x, y){
+    return x + y
+}
+var a = 5
+var b = 3
+println(add(a, b))

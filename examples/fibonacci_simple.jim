@@ -1,0 +1,19 @@
+// 斐波那契数列 - 简化版本
+println("Fibonacci sequence (first 10 numbers):")
+
+var a = 0
+var b = 1
+
+println(a)
+println(b)
+
+var count = 2
+while (count < 10) {
+    var temp = a + b
+    println(temp)
+    a = b
+    b = temp
+    count = count + 1
+}
+
+println("Fibonacci calculation completed!")

@@ -1,0 +1,7 @@
+// 带参数但只有 return 的函数
+function double(n) {
+    return n + n
+}
+
+var x = double(5)
+println(x)

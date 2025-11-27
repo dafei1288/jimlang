@@ -1,0 +1,4 @@
+function double(n) {
+    return n + n
+}
+println(double(5))

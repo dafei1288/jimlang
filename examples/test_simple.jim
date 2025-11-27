@@ -1,0 +1,7 @@
+// 最简单的函数测试
+function simple() {
+    return 42
+}
+
+var x = simple()
+println(x)

@@ -1,0 +1,6 @@
+function double(n) {
+    return n + n
+}
+var result = double(5)
+println("Result:")
+println(result)

@@ -1,0 +1,12 @@
+// 测试不同的调用方式
+function test() {
+    println("Function called!")
+    return 42
+}
+
+println("Test 1: Direct in println")
+println(test())
+
+println("Test 2: Assigned to variable")
+var result = test()
+println(result)

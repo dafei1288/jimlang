@@ -1,0 +1,43 @@
+// 简单测试脚本
+var x = 10
+var y = 20
+println("x = ")
+println(x)
+println("y = ")
+println(y)
+
+var sum = x + y
+println("sum = ")
+println(sum)
+
+// 测试 if/else
+if (x < y) {
+    println("x is less than y")
+} else {
+    println("x is not less than y")
+}
+
+// 测试 while 循环
+var i = 0
+println("Counting to 5:")
+while (i < 5) {
+    println(i)
+    i = i + 1
+}
+
+// 测试 for 循环
+println("For loop from 0 to 3:")
+for (var j = 0; j < 4; j = j + 1) {
+    println(j)
+}
+
+// 测试简单函数
+function add(a, b) {
+    return a + b
+}
+
+var result = add(3, 7)
+println("3 + 7 = ")
+println(result)
+
+println("All tests completed!")

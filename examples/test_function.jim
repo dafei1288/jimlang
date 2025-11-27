@@ -1,0 +1,12 @@
+// 测试简单函数
+function test() {
+    var x = 5
+    println("Inside function, x = ")
+    println(x)
+    return x
+}
+
+println("Testing function...")
+var result = test()
+println("Result = ")
+println(result)

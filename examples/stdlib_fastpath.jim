@@ -1,0 +1,18 @@
+var s = "Hello World"
+println(len(s))
+println(toUpperCase(s))
+println(substring(s, 0, 5))
+println(indexOf(s, "World"))
+println(split("a,b,c", ","))
+println(trim("  hi  "))
+
+println(max(3, 9))
+println(min(3, 9))
+println(abs(0 - 5))
+println(round(3.7))
+println(random())
+
+var p = "target/tmp/phase3.txt"
+file_write(p, "Hello")
+println(file_exists(p))
+println(file_read(p))

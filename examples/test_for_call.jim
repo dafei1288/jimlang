@@ -1,0 +1,12 @@
+function printNum(n) {
+    println("Number is:")
+    println(n)
+    return n
+}
+
+println("Calling in for loop:")
+for (var i = 0; i < 3; i = i + 1) {
+    var result = printNum(i)
+    println("Got result:")
+    println(result)
+}

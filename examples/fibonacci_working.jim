@@ -1,0 +1,18 @@
+// Fibonacci - 工作的版本（直接打印，不赋值给变量）
+function fibonacci(n) {
+    var a = 0
+    var b = 1
+    for (var j = 0; j < n; j = j + 1) {
+        var temp = a
+        a = b
+        b = temp + b
+    }
+    return a
+}
+
+println("Fibonacci sequence:")
+for (var i = 0; i < 10; i = i + 1) {
+    println(fibonacci(i))
+}
+
+println("All done!")

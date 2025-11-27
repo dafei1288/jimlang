@@ -1,0 +1,11 @@
+// 测试带参数的函数
+function testParam(x) {
+    println("Parameter x = ")
+    println(x)
+    return x
+}
+
+println("Calling testParam(10):")
+var result = testParam(10)
+println("Result = ")
+println(result)

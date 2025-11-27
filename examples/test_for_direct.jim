@@ -1,0 +1,11 @@
+function test(n) {
+    println("test called with:")
+    println(n)
+    return n
+}
+
+println("Calling function directly in for loop:")
+for (var i = 0; i < 3; i = i + 1) {
+    println("Direct call:")
+    println(test(i))
+}

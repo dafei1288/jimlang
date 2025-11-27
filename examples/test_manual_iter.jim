@@ -1,0 +1,17 @@
+function test(n) {
+    println("test called with:")
+    println(n)
+    return n
+}
+
+println("Iteration 1:")
+var result = test(1)
+println(result)
+
+println("Iteration 2:")
+var result2 = test(2)
+println(result2)
+
+println("Iteration 3:")
+var result3 = test(3)
+println(result3)

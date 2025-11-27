@@ -1,0 +1,13 @@
+function add(x, y) {
+    println("add called with:")
+    println(x)
+    println(y)
+    return x + y
+}
+
+println("Test 1: Direct call")
+println(add(3, 5))
+
+println("Test 2: Assign to variable")
+var result = add(7, 8)
+println(result)

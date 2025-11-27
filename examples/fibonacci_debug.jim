@@ -1,0 +1,22 @@
+// 测试 fibonacci 函数（带调试输出）
+function fibonacci(n) {
+    println("fibonacci called with n =")
+    println(n)
+    var a = 0
+    var b = 1
+    for (var i = 0; i < n; i = i + 1) {
+        var temp = a
+        a = b
+        b = temp + b
+    }
+    println("Returning a =")
+    println(a)
+    return a
+}
+
+println("Fibonacci sequence:")
+for (var i = 0; i < 10; i = i + 1) {
+    var result = fibonacci(i)
+    println("Result for " + i)
+    println(result)
+}

@@ -1,0 +1,16 @@
+println("Before function definition")
+function double(n) {
+    println("Inside double function, n =")
+    println(n)
+    var result = n + n
+    println("Calculated result =")
+    println(result)
+    return result
+}
+println("After function definition")
+
+println("Before calling double(5)")
+var x = double(5)
+println("After calling double(5)")
+println("x = ")
+println(x)

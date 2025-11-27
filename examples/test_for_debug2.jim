@@ -1,0 +1,19 @@
+println("Testing loop variable access:")
+for (var i = 0; i < 3; i = i + 1) {
+    println("i in loop:")
+    println(i)
+}
+
+println("Now testing function call in loop:")
+function test(n) {
+    println("test called")
+    return n
+}
+
+for (var j = 0; j < 2; j = j + 1) {
+    println("Before call, j =")
+    println(j)
+    var res = test(j)
+    println("After call, res =")
+    println(res)
+}
