@@ -21,7 +21,6 @@ out/
 .classpath
 .project
 .settings/
-bin/
 
 # IDE - VS Code
 .vscode/

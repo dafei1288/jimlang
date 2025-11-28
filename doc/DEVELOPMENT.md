@@ -234,7 +234,7 @@ This runs:
 ## Getting Help
 
 - Check existing issues in the repository
-- Review the main [README.md](README.md) for usage examples
+- Review the main [README.md](../README.md) for usage examples
 - Consult the [doc/](doc/) directory for additional documentation
 
 ---
