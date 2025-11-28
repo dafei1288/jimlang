@@ -1,10 +1,10 @@
 # What is JimLang
 
-JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮助大家入门语言开发领域。
+JimLang鏄熀浜嶫VM鐨勫叿鏈夊畬鍠勮瑷€绯荤粺鐨勭紪绋嬭瑷€锛屽叾涓绘棬鏄府鍔╁ぇ瀹跺叆闂ㄨ瑷€寮€鍙戦鍩熴€?
 
-# 如何使用
+# 濡備綍浣跨敤
 
-添加snapshots仓库
+娣诲姞snapshots浠撳簱
 ```xml
 <repositories>
       <repository>
@@ -14,7 +14,7 @@ JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮�
 </repositories>
 ```
 
-引入jdbc依赖
+寮曞叆jdbc渚濊禆
 ```xml
 <dependency>
     <groupId>com.dafei1288</groupId>
@@ -42,7 +42,7 @@ JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮�
     }
 ```
 
-或者使用 jsr-233 方式
+鎴栬€呬娇鐢?jsr-233 鏂瑰紡
 
 ```
     @Test
@@ -64,29 +64,29 @@ JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮�
     }
 ```
 
-# 参与开发
+# 鍙備笌寮€鍙?
 
-## 系统要求
+## 绯荤粺瑕佹眰
 1. Java >= 21
 2. Maven >= 3.8 (If you want to compile and install IoTDB from source code).
 
-## 代码编译
+## 浠ｇ爜缂栬瘧
 
 `mvn clean package -DskipTest=true`
 
 
-# 运行 REPL
+# 杩愯 REPL
 
-编译项目后，可以启动交互式 REPL：
+缂栬瘧椤圭洰鍚庯紝鍙互鍚姩浜や簰寮?REPL锛?
 
 ```bash
 mvn clean package
 java -cp target/jimlang-1.0-SNAPSHOT.jar com.dafei1288.jimlang.Repl
 ```
 
-或者从 IDE 中运行 `Repl.java` 的 main 方法。
+鎴栬€呬粠 IDE 涓繍琛?`Repl.java` 鐨?main 鏂规硶銆?
 
-REPL 示例:
+REPL 绀轰緥:
 ```
 JimLang>
 var x = 10
@@ -105,82 +105,76 @@ exit()
 good bye!
 ```
 
-# 语言特性
+# 璇█鐗规€?
 
-## 当前支持
-- ✅ 变量声明：`var x = 10`
-- ✅ 类型注解：`var name: string = "jim"`
-- ✅ 函数定义：`function add(a, b) { return a + b }`
-- ✅ 基本运算：`+, -, *, /, <, >, ==` 等
-- ✅ 内置函数：`print()`, `println()`
-- ✅ 注释：`//` 单行, `/* */` 多行
+## 褰撳墠鏀寔
+- 鉁?鍙橀噺澹版槑锛歚var x = 10`
+- 鉁?绫诲瀷娉ㄨВ锛歚var name: string = "jim"`
+- 鉁?鍑芥暟瀹氫箟锛歚function add(a, b) { return a + b }`
+- 鉁?鍩烘湰杩愮畻锛歚+, -, *, /, <, >, ==` 绛?
+- 鉁?鍐呯疆鍑芥暟锛歚print()`, `println()`
+- 鉁?娉ㄩ噴锛歚//` 鍗曡, `/* */` 澶氳
 
-## 开发中
-- 🚧 完整的作用域管理
-- 🚧 函数参数传递
-- 🚧 控制流：if/else, while, for
-- 🚧 数据结构：数组、对象
-- 🚧 更多标准库函数
+## 寮€鍙戜腑
+- 馃毀 瀹屾暣鐨勪綔鐢ㄥ煙绠＄悊
+- 馃毀 鍑芥暟鍙傛暟浼犻€?
+- 馃毀 鎺у埗娴侊細if/else, while, for
+- 馃毀 鏁版嵁缁撴瀯锛氭暟缁勩€佸璞?
+- 馃毀 鏇村鏍囧噯搴撳嚱鏁?
 
-详见 [开发路线图](ROADMAP.md) 和 [快速计划](ROADMAP_QUICK.md)
+璇﹁ [寮€鍙戣矾绾垮浘](ROADMAP.md) 鍜?[蹇€熻鍒抅(ROADMAP_QUICK.md)
 
-# 项目文档
+# 椤圭洰鏂囨。
 
-- 📖 [README (English)](README.md) - 英文说明
-- 📖 [README_ZH (中文)](README_ZH.md) - 本文档
-- 🔧 [开发环境设置](DEVELOPMENT.md) - 开发者指南
-- 📋 [快速参考](QUICKREF.md) - 常用命令和示例
-- 🗺️ [开发路线图 (详细)](ROADMAP.md) - 完整开发计划
-- 🗺️ [开发路线图 (快速)](ROADMAP_QUICK.md) - 精简版计划
+- 馃摉 [README (English)](README.md) - 鑻辨枃璇存槑
+- 馃摉 [README_ZH (涓枃)](README_ZH.md) - 鏈枃妗?
+- 馃敡 [寮€鍙戠幆澧冭缃甝(DEVELOPMENT.md) - 寮€鍙戣€呮寚鍗?
+- 馃搵 [蹇€熷弬鑰僝(QUICKREF.md) - 甯哥敤鍛戒护鍜岀ず渚?
+- 馃椇锔?[寮€鍙戣矾绾垮浘 (璇︾粏)](ROADMAP.md) - 瀹屾暣寮€鍙戣鍒?
+- 馃椇锔?[寮€鍙戣矾绾垮浘 (蹇€?](ROADMAP_QUICK.md) - 绮剧畝鐗堣鍒?
 
-# 如何贡献
+# 濡備綍璐＄尞
 
-我们欢迎各种形式的贡献！
+鎴戜滑娆㈣繋鍚勭褰㈠紡鐨勮础鐚紒
 
-1. **报告问题**: 发现 bug 或有建议？请创建 Issue
-2. **提交代码**:
-   - Fork 本项目
-   - 创建特性分支: `git checkout -b feature/my-feature`
-   - 提交更改: `git commit -am 'Add my feature'`
-   - 推送分支: `git push origin feature/my-feature`
-   - 创建 Pull Request
-3. **完善文档**: 改进文档和示例
-4. **分享经验**: 写文章、做演讲，分享你使用 JimLang 的经验
+1. **鎶ュ憡闂**: 鍙戠幇 bug 鎴栨湁寤鸿锛熻鍒涘缓 Issue
+2. **鎻愪氦浠ｇ爜**:
+   - Fork 鏈」鐩?
+   - 鍒涘缓鐗规€у垎鏀? `git checkout -b feature/my-feature`
+   - 鎻愪氦鏇存敼: `git commit -am 'Add my feature'`
+   - 鎺ㄩ€佸垎鏀? `git push origin feature/my-feature`
+   - 鍒涘缓 Pull Request
+3. **瀹屽杽鏂囨。**: 鏀硅繘鏂囨。鍜岀ず渚?
+4. **鍒嗕韩缁忛獙**: 鍐欐枃绔犮€佸仛婕旇锛屽垎浜綘浣跨敤 JimLang 鐨勭粡楠?
 
-详见 [ROADMAP_QUICK.md](ROADMAP_QUICK.md) 中的近期任务列表。
+璇﹁ [ROADMAP_QUICK.md](ROADMAP_QUICK.md) 涓殑杩戞湡浠诲姟鍒楄〃銆?
 
-# 学习资源
+# 瀛︿範璧勬簮
 
-如果你对语言开发感兴趣，推荐以下资源：
+濡傛灉浣犲璇█寮€鍙戞劅鍏磋叮锛屾帹鑽愪互涓嬭祫婧愶細
 
-- 📚 **《Crafting Interpreters》** - Robert Nystrom (强烈推荐!)
-  - 免费在线阅读: https://craftinginterpreters.com/
-  - 从零开始实现一门编程语言
-- 📚 **《编程语言实现模式》** - Terence Parr (ANTLR 作者)
-- 📚 **《编译原理》** (龙书) - 经典教材
-- 🔗 **ANTLR 官方文档**: https://www.antlr.org/
+- 馃摎 **銆奀rafting Interpreters銆?* - Robert Nystrom (寮虹儓鎺ㄨ崘!)
+  - 鍏嶈垂鍦ㄧ嚎闃呰: https://craftinginterpreters.com/
+  - 浠庨浂寮€濮嬪疄鐜颁竴闂ㄧ紪绋嬭瑷€
+- 馃摎 **銆婄紪绋嬭瑷€瀹炵幇妯″紡銆?* - Terence Parr (ANTLR 浣滆€?
+- 馃摎 **銆婄紪璇戝師鐞嗐€?* (榫欎功) - 缁忓吀鏁欐潗
+- 馃敆 **ANTLR 瀹樻柟鏂囨。**: https://www.antlr.org/
 
-# 路线图
-# TODO 列表
+# 璺嚎鍥?# TODO 鍒楄〃
 
-- 更多内置函数（contains, replace, startsWith/endsWith, padLeft/padRight, repeat, pow, sqrt, floor, ceil, randomRange, file_append）
-- 点调用/命名空间语法（如 s.length(), Math.max(), File.read()）
-- 数组与对象类型（使 split 等返回结构化数据）
+- 鏇村鍐呯疆鍑芥暟锛坈ontains, replace, startsWith/endsWith, padLeft/padRight, repeat, pow, sqrt, floor, ceil, randomRange, file_append锛?- 鐐硅皟鐢?鍛藉悕绌洪棿璇硶锛堝 s.length(), Math.max(), File.read()锛?- 鏁扮粍涓庡璞＄被鍨嬶紙浣?split 绛夎繑鍥炵粨鏋勫寲鏁版嵁锛?
 
-# 标准库（Fast Path）
+# 鏍囧噯搴擄紙Fast Path锛?
+鏈樁娈垫彁渚涗竴鎵瑰彲鐩存帴璋冪敤鐨勫叏灞€鍐呯疆鍑芥暟锛堝悗缁皢鏀寔鐐硅皟鐢?鍛藉悕绌洪棿锛夛細
 
-本阶段提供一批可直接调用的全局内置函数（后续将支持点调用/命名空间）：
+- 瀛楃涓?  - `len(s)`锛宍toUpperCase(s)`/`upper(s)`锛宍toLowerCase(s)`/`lower(s)`锛宍trim(s)`
+  - `substring(s, start[, end])`锛宍indexOf(s, sub)`锛宍split(s, sep)`
+- 鏁板
+  - `max(a, b)`锛宍min(a, b)`锛宍abs(x)`锛宍round(x)`锛宍random()`
+- 鏂囦欢
+  - `file_read(path)`锛宍file_write(path, content)`锛宍file_exists(path)`
 
-- 字符串
-  - `len(s)`，`toUpperCase(s)`/`upper(s)`，`toLowerCase(s)`/`lower(s)`，`trim(s)`
-  - `substring(s, start[, end])`，`indexOf(s, sub)`，`split(s, sep)`
-- 数学
-  - `max(a, b)`，`min(a, b)`，`abs(x)`，`round(x)`，`random()`
-- 文件
-  - `file_read(path)`，`file_write(path, content)`，`file_exists(path)`
-
-示例：
-```jim
+绀轰緥锛?```jim
 var s = "Hello World"
 println(len(s))
 println(toUpperCase(s))
@@ -201,4 +195,31 @@ println(file_exists(p))
 println(file_read(p))
 ```
 
-更多候选见 ROADMAP Phase 3 - 3.5 节（TODO）。
+鏇村鍊欓€夎 ROADMAP Phase 3 - 3.5 鑺傦紙TODO锛夈€?
+
+## 新增示例
+
+### 控制流：break / continue
+```jim
+for (var i = 0; i < 5; i = i + 1) {
+  if (i == 2) { continue }
+  if (i == 4) { break }
+  println(i)
+}
+```
+
+### 数组 / 对象
+```jim
+var arr = [1, 2, 3]
+println(arr[0])
+arr[1] = 10
+println(arr.length)
+
+var person = { name: "Jim", age: 25 }
+println(person.name)
+person.age = 26
+println(person.age)
+
+var nested = { a: { b: 2 } }
+println(nested.a.b)
+```
