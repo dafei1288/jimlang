@@ -1,0 +1,4 @@
+# Enforce LF and UTF-8 for text files
+*.md text eol=lf
+*.g4 text eol=lf
+*.java text eol=lf
