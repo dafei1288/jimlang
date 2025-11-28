@@ -1,4 +1,15 @@
-﻿# JimLang 鍔熻兘寮€鍙戠姸鎬?
+
+## Update (2025-11-28)
+- Phase 2 (控制流): 已完成
+  - if/else, while, for: 完成
+  - break/continue: 完成
+  - 链式二元运算: 完成（支持 `a + b + c` 等左结合计算）
+  - 赋值增强: 支持 `a[i] = v`、`obj.key = v`
+- 数据结构: 基础数组/对象 已完成
+  - 数组字面量与索引读写；`length` 属性
+  - 对象字面量与点属性读写
+- Phase 3 (标准库): 进行中（len/upper/lower/trim/substring/indexOf/split，max/min/abs/round/random，file_read/file_write/file_exists 已可用）
+# JimLang 鍔熻兘寮€鍙戠姸鎬?
 
 ## 鏍稿績鍔熻兘鐘舵€佽〃
 
