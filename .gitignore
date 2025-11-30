@@ -80,3 +80,5 @@ Thumbs.db
 # Build and test output
 test-output/
 *.hprof
+
+.claude

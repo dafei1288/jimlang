@@ -1,11 +1,26 @@
 ﻿<!doctype html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JimLang - 轻量脚本语言 · REPL · JSR‑223</title>
-  <meta name="description" content="JimLang：基于 JVM 的轻量脚本语言，支持 REPL、JSR‑223、ANTLR 语法、可嵌入与标准库。" />
+  <title>JimLang - JVM 脚本语言 · REPL · JSR-223 · dev snapshot</title>
+  <meta name="description" content="JimLang: 基于 JVM 的轻量脚本语言。控制流 if/while/for，数组/对象，标准库（字符串/数学/文件），REPL，JSR-223。" />
+  
   <link rel="stylesheet" href="assets/styles.css" />
+  <style>
+    /* Theme toggle: solid icons; show sun on light, moon on dark */
+    .btn.theme-toggle{border:0;background:transparent;padding:8px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;line-height:1;color:var(--fg)}
+    .btn.theme-toggle:hover{background:rgba(255,255,255,0.10)}
+    html[data-theme="light"] .btn.theme-toggle:hover{background:rgba(0,0,0,0.06)}
+    .btn.theme-toggle .icon{width:20px;height:20px;display:block}
+    html[data-theme="light"] .btn.theme-toggle .sun{display:block}
+    html[data-theme="light"] .btn.theme-toggle .moon{display:none}
+    html[data-theme="dark"] .btn.theme-toggle .sun{display:none}
+    html[data-theme="dark"] .btn.theme-toggle .moon{display:block}
+    /* Enlarge navbar logo for better legibility */
+    .brand .logo-img{height:56px !important}
+  </style>
+  <style>@media (max-width:720px){ .brand .logo-img{ height:56px !important } }</style>
 </head>
 <body>
   <header class="site-header container">
@@ -16,18 +31,42 @@
     <nav class="nav">
       <a href="#features">特性</a>
       <a href="#quickstart">快速开始</a>
+      <a href="#syntax">语法速览</a>
       <a href="#examples">示例</a>
-      <a href="#docs">文档</a>
+      <a href="#cli">命令行</a>
       <a href="#build">构建与测试</a>
       <a href="#roadmap">路线图</a>
     </nav>
+    <button id="themeToggle" class="btn theme-toggle" aria-label="切换主题" title="切换主题">
+      <svg class="icon sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <circle cx="12" cy="12" r="5" fill="currentColor" />
+        <rect x="11" y="1" width="2" height="4" rx="1" fill="currentColor" />
+        <rect x="11" y="19" width="2" height="4" rx="1" fill="currentColor" />
+        <rect x="1" y="11" width="4" height="2" rx="1" fill="currentColor" />
+        <rect x="19" y="11" width="4" height="2" rx="1" fill="currentColor" />
+        <rect x="11" y="1" width="2" height="4" rx="1" fill="currentColor" transform="rotate(45 12 12)" />
+        <rect x="11" y="1" width="2" height="4" rx="1" fill="currentColor" transform="rotate(135 12 12)" />
+        <rect x="11" y="1" width="2" height="4" rx="1" fill="currentColor" transform="rotate(225 12 12)" />
+        <rect x="11" y="1" width="2" height="4" rx="1" fill="currentColor" transform="rotate(315 12 12)" />
+      </svg>
+      <svg class="icon moon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <defs>
+          <mask id="moon-mask">
+            <rect width="24" height="24" fill="white" />
+            <circle cx="14" cy="10" r="7" fill="black" />
+          </mask>
+        </defs>
+        <circle cx="12" cy="12" r="8" fill="currentColor" mask="url(#moon-mask)" />
+      </svg>
+    </button>
+    
   </header>
 
   <main>
     <section class="hero container" id="top">
       <h1 class="title gradient-text">JimLang</h1>
-      <p class="subtitle">简单 · 实用 · 可嵌入 的 JVM 脚本语言</p>
-      <p class="subtext">REPL · ANTLR 语法 · JSR‑223 集成 · 可与 Java 无缝互操作</p>
+      <p class="subtitle">基于 JVM 的轻量脚本语言，适合学习语言实现与脚本开发。</p>
+      <p class="subtext">REPL · JSR-223 · if/while/for · 数组/对象 · 标准库（字符串/数学/文件） · dev snapshot</p>
       <div class="cta">
         <a class="btn primary" href="#quickstart">快速开始</a>
         <a class="btn" href="#features">查看特性</a>
@@ -39,34 +78,34 @@
       <h2>核心特性</h2>
       <div class="grid">
         <div class="card glass">
-          <div class="icon">🧮</div>
-          <h3>语言内核</h3>
-          <p>变量、函数、表达式求值，控制流（if/else、while、for、break/continue），链式运算。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">💬</div>
-          <h3>REPL 交互</h3>
-          <p>可保留状态，支持 <code>:vars</code>/<code>:funcs</code>/<code>:clear</code>/<code>:help</code>/<code>:exit</code> 命令。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">🧰</div>
-          <h3>标准库</h3>
-          <p>字符串（len/upper/lower/trim/substring/indexOf/split）、数学（max/min/abs/round/random）、文件（read/write/exists）。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">🧩</div>
-          <h3>JSR‑223</h3>
-          <p>作为脚本引擎嵌入 Java：<code>ScriptEngine engine = manager.getEngineByName("jim");</code></p>
-        </div>
-        <div class="card glass">
-          <div class="icon">⚙️</div>
-          <h3>ANTLR 4</h3>
-          <p>采用 ANTLR 4 定义语法，易于扩展与维护。</p>
+          <div class="icon">🔁</div>
+          <h3>控制流与表达式</h3>
+          <p>if/else，while，for，break/continue；算术/比较。</p>
         </div>
         <div class="card glass">
           <div class="icon">📦</div>
-          <h3>可集成</h3>
-          <p>Maven 构建与测试，示例与文档完善，易于在项目中集成使用。</p>
+          <h3>数组与对象</h3>
+          <p>字面量；索引/属性访问；<code>length</code> 可读。</p>
+        </div>
+        <div class="card glass">
+          <div class="icon">📚</div>
+          <h3>标准库</h3>
+          <p>字符串、数学、文件 I/O。</p>
+        </div>
+        <div class="card glass">
+          <div class="icon">💬</div>
+          <h3>REPL 与 JSR-223</h3>
+          <p>可嵌入 Java；ScriptEngine 运行。</p>
+        </div>
+        <div class="card glass">
+          <div class="icon">🧩</div>
+          <h3>ANTLR4 + Maven</h3>
+          <p>ANTLR4 语法；Maven 构建；Java 21+。</p>
+        </div>
+        <div class="card glass">
+          <div class="icon">🖥️</div>
+          <h3>跨平台 CLI</h3>
+          <p>Windows/Unix 启动脚本。</p>
         </div>
       </div>
     </section>
@@ -75,28 +114,46 @@
       <h2>快速开始</h2>
       <div class="grid code-grid">
         <div class="card glass">
-          <h3>REPL</h3>
-          <pre><code class="language-bash">mvn -q exec:java -Dexec.mainClass="com.dafei1288.jimlang.Repl"</code></pre>
-          <pre><code class="language-text">JimLang&gt; println("Hello, JimLang!")
-Hello, JimLang!</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>Java 原生 API</h3>
-          <pre><code class="language-java">import com.dafei1288.jimlang.JimLangShell;
-
-JimLangShell shell = new JimLangShell();
-String script = """
-  function add(a, b) { return a + b }
-  println(add(5, 3))
+          <h3>Java 内嵌 (JimLangShell)</h3>
+          <pre><code class="language-java">String script = """
+function two() { return 2 ; } ;
+var x = two() ;
+println(x) ;
 """;
-Object result = shell.eval(script, null);</code></pre>
+JimLangShell shell = new JimLangShell();
+shell.eval(script, null);</code></pre>
         </div>
         <div class="card glass">
-          <h3>JSR‑223</h3>
-          <pre><code class="language-java">import javax.script.*;
+          <h3>JSR-223 ScriptEngine</h3>
+          <pre><code class="language-java">ScriptEngineManager manager = new ScriptEngineManager();
+ScriptEngine engine = manager.getEngineByName("jim");
+engine.eval("println(\"hello from JimLang\")");</code></pre>
+        </div>
+      </div>
+    </section>
 
-ScriptEngine engine = new ScriptEngineManager().getEngineByName("jim");
-engine.eval("println('Hello from JSR-223!')");</code></pre>
+    <section class="container" id="syntax">
+      <h2>语法速览</h2>
+      <div class="grid code-grid">
+        <div class="card glass">
+          <h3>Control Flow (break/continue)</h3>
+          <pre><code class="language-jim">for (var i = 0; i &lt; 5; i = i + 1) {
+  if (i == 2) { continue }
+  if (i == 4) { break }
+  println(i)
+}</code></pre>
+        </div>
+        <div class="card glass">
+          <h3>Arrays &amp; Objects</h3>
+          <pre><code class="language-jim">var arr = [1, 2, 3]
+println(arr[0])     # 1
+arr[1] = 10
+println(arr.length) # 3
+
+var person = { name: "Jim", age: 25 }
+println(person.name)
+person.age = 26
+println(person.age)</code></pre>
         </div>
       </div>
     </section>
@@ -105,59 +162,95 @@ engine.eval("println('Hello from JSR-223!')");</code></pre>
       <h2>示例</h2>
       <div class="grid code-grid">
         <div class="card glass">
-          <h3>Hello World</h3>
-          <pre><code class="language-jim">println("Hello from JimLang!")</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>函数与控制流</h3>
-          <pre><code class="language-jim">function factorial(n) {
-  if (n <= 1) { return 1 }
-  return n * factorial(n - 1)
+          <h3>Fibonacci</h3>
+          <pre><code class="language-jim">function fibonacci(n) {
+  var a = 0
+  var b = 1
+  for (var i = 0; i &lt; n; i = i + 1) {
+    var t = a
+    a = b
+    b = t + b
+  }
+  return a
 }
-println("5! = " + factorial(5))</code></pre>
+println(fibonacci(10))</code></pre>
         </div>
         <div class="card glass">
-          <h3>数组与对象</h3>
-          <pre><code class="language-jim">var arr = [1, 2, 3]
-println(arr[0])
-var person = { name: "Jim", age: 25 }
-println(person.name)</code></pre>
+          <h3>变量与函数</h3>
+          <pre><code class="language-jim">function add(a, b) { return a + b }
+var x = 10
+var y = 20
+println(add(x, y))</code></pre>
+        </div>
+        <div class="card glass">
+          <h3>文件 I/O</h3>
+          <pre><code class="language-jim">var path = "tmp.txt"
+file_write(path, "hello")
+println(file_exists(path))
+println(file_read(path))</code></pre>
         </div>
       </div>
     </section>
 
-    <section class="container" id="docs">
-      <h2>文档</h2>
-      <ul class="list">
-        <li><a href="../README_ZH.md" target="_blank">README（中文）</a></li>
-        <li><a href="../QUICKREF.md" target="_blank">快速参考（Quick Reference）</a></li>
-        <li><a href="../STATUS.md" target="_blank">状态与进度（STATUS）</a></li>
-        <li><a href="../ROADMAP.md" target="_blank">路线图（ROADMAP）</a> / <a href="../ROADMAP_QUICK.md" target="_blank">快速版</a></li>
-      </ul>
+    <section class="container" id="cli">
+      <h2>命令行</h2>
+      <div class="grid code-grid">
+        <div class="card glass">
+          <h3>运行脚本</h3>
+          <pre><code class="language-powershell"># Windows
+bin\jimlang.cmd examples\test.jim</code></pre>
+          <pre><code class="language-bash"># Unix
+bin/jimlang.sh examples/test.jim</code></pre>
+        </div>
+        <div class="card glass">
+          <h3>常用选项</h3>
+          <pre><code class="language-bash">bin\jimlang.cmd --version
+bin\jimlang.cmd --help</code></pre>
+        </div>
+      </div>
     </section>
 
     <section class="container" id="build">
       <h2>构建与测试</h2>
       <ul class="list">
-        <li>构建：<code>mvn clean package</code>；仅编译：<code>mvn clean compile</code></li>
-        <li>测试：<code>mvn test</code>；指定类/方法：<code>mvn test -Dtest=Class#method</code></li>
-        <li>运行 REPL：<code>mvn exec:java -Dexec.mainClass="com.dafei1288.jimlang.Repl"</code></li>
+        <li>环境：Java 21+，Maven 3.x</li>
+        <li>构建：<code>mvn clean package -DskipTests</code></li>
+        <li>示例脚本：<code>examples/</code> 目录</li>
       </ul>
     </section>
 
     <section class="container" id="roadmap">
-      <h2>路线图与里程碑</h2>
-      <ul class="list">
-        <li>当前版本：v0.3.0（完成 Phase 2：控制流 + break/continue + 链式运算 + 基础数组/对象）</li>
-        <li>下一步：标准库扩展（字符串/数组方法、Math 扩展、文件 I/O 扩展）</li>
-      </ul>
+      <h2>路线图摘要</h2>
+      <div class="grid">
+        <div class="card glass">
+          <h3>已完成（Phase 2）</h3>
+          <ul class="list">
+            <li>控制流：if/else、while、for、break/continue</li>
+            <li>表达式：算术/比较</li>
+            <li>数据结构：数组/对象，索引与属性访问，length 可读</li>
+            <li>标准库：字符串/数学/文件 I/O</li>
+            <li>REPL 基础；ANTLR4 + Maven</li>
+          </ul>
+        </div>
+        <div class="card glass">
+          <h3>进行中 / 计划</h3>
+          <ul class="list">
+            <li>标准库扩展：字符串与数学增强</li>
+            <li>文件 I/O：append 等</li>
+            <li>错误处理与提示：try/catch、更友好的错误定位</li>
+            <li>模块与高级特性</li>
+          </ul>
+        </div>
+      </div>
+      <p class="muted">版本：dev snapshot · GitHub：<a href="https://github.com/dafei1288/jimlang" target="_blank" rel="noopener">dafei1288/jimlang</a></p>
     </section>
   </main>
 
   <footer class="site-footer container">
-    <p>© 2025 JimLang · <a href="https://github.com/dafei1288/jimlang" target="_blank" rel="noopener">GitHub</a></p>
+    <div>JimLang dev snapshot. All rights reserved.</div>
+    <div class="muted">Built with Java 21+. Ready for embedding and scripts.</div>
   </footer>
 
-  <script src="assets/app.js"></script>
+  <script src="assets/app-light.js"></script>
 </body>
 </html>
