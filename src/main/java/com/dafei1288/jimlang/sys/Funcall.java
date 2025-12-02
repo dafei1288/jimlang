@@ -30,17 +30,36 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("SUBSTRING");
     SYS_FUNCTION_NAMES.add("INDEXOF");
     SYS_FUNCTION_NAMES.add("SPLIT");
-    SYS_FUNCTION_NAMES.add("TRIM");
+            SYS_FUNCTION_NAMES.add("TRIM");
+    // array
+    SYS_FUNCTION_NAMES.add("PUSH");
+    SYS_FUNCTION_NAMES.add("POP");
+    SYS_FUNCTION_NAMES.add("SHIFT");
+    SYS_FUNCTION_NAMES.add("UNSHIFT");
+    // extra string
+    SYS_FUNCTION_NAMES.add("CONTAINS");
+    SYS_FUNCTION_NAMES.add("REPLACE");
+    SYS_FUNCTION_NAMES.add("STARTSWITH");
+    SYS_FUNCTION_NAMES.add("ENDSWITH");
+    SYS_FUNCTION_NAMES.add("REPEAT");
+    SYS_FUNCTION_NAMES.add("PADLEFT");
+    SYS_FUNCTION_NAMES.add("PADRIGHT");
     // math
     SYS_FUNCTION_NAMES.add("MAX");
     SYS_FUNCTION_NAMES.add("MIN");
     SYS_FUNCTION_NAMES.add("ABS");
     SYS_FUNCTION_NAMES.add("ROUND");
-    SYS_FUNCTION_NAMES.add("RANDOM");
+        SYS_FUNCTION_NAMES.add("RANDOM");
+    SYS_FUNCTION_NAMES.add("POW");
+    SYS_FUNCTION_NAMES.add("SQRT");
+    SYS_FUNCTION_NAMES.add("FLOOR");
+    SYS_FUNCTION_NAMES.add("CEIL");
+    SYS_FUNCTION_NAMES.add("RANDOMRANGE");
     // file
     SYS_FUNCTION_NAMES.add("FILE_READ");
     SYS_FUNCTION_NAMES.add("FILE_WRITE");
-    SYS_FUNCTION_NAMES.add("FILE_EXISTS");
+        SYS_FUNCTION_NAMES.add("FILE_EXISTS");
+    SYS_FUNCTION_NAMES.add("FILE_APPEND");
   }
 
   public static boolean isSysFunction(String functionName){
@@ -120,9 +139,9 @@ public class Funcall {
     return str.substring(st);
   }
   public Integer indexOf(Object s, Object sub){ return asString(s).indexOf(asString(sub)); }
-  public String split(Object s, Object sep){
+    public java.util.List<String> split(Object s, Object sep){
     String[] parts = asString(s).split(java.util.regex.Pattern.quote(asString(sep)));
-    return "[" + String.join(", ", parts) + "]";
+    return java.util.Arrays.asList(parts);
   }
 
   // ------------- built-ins: math -------------
@@ -167,4 +186,110 @@ public class Funcall {
     }catch(IOException e){ throw new RuntimeException(e); }
   }
   public Boolean file_exists(Object path){ return Files.exists(Paths.get(asString(path))); }
+  // ------------- built-ins: string (extended) -------------
+  public Boolean contains(Object s, Object sub){ return asString(s).contains(asString(sub)); }
+  public String replace(Object s, Object target, Object repl){
+    return asString(s).replace(asString(target), asString(repl));
+  }
+  public Boolean startsWith(Object s, Object prefix){ return asString(s).startsWith(asString(prefix)); }
+  public Boolean endsWith(Object s, Object suffix){ return asString(s).endsWith(asString(suffix)); }
+  public String repeat(Object s, Object times){
+    int n = asInt(times);
+    if (n <= 0) return "";
+    String str = asString(s);
+    StringBuilder sb = new StringBuilder(str.length() * n);
+    for (int i = 0; i < n; i++) sb.append(str);
+    return sb.toString();
+  }
+  private static char padCharOf(Object pad){
+    String ps = asString(pad);
+    return ps.isEmpty() ? ' ' : ps.charAt(0);
+  }
+  public String padLeft(Object s, Object width){ return padLeft(s, width, " "); }
+  public String padLeft(Object s, Object width, Object pad){
+    String str = asString(s);
+    int w = asInt(width);
+    if (w <= str.length()) return str;
+    int count = w - str.length();
+    char ch = padCharOf(pad);
+    StringBuilder sb = new StringBuilder(w);
+    for (int i = 0; i < count; i++) sb.append(ch);
+    sb.append(str);
+    return sb.toString();
+  }
+  public String padRight(Object s, Object width){ return padRight(s, width, " "); }
+  public String padRight(Object s, Object width, Object pad){
+    String str = asString(s);
+    int w = asInt(width);
+    if (w <= str.length()) return str;
+    int count = w - str.length();
+    char ch = padCharOf(pad);
+    StringBuilder sb = new StringBuilder(w);
+    sb.append(str);
+    for (int i = 0; i < count; i++) sb.append(ch);
+    return sb.toString();
+  }
+
+  // ------------- built-ins: math (extended) -------------
+  public Number pow(Object a, Object b){ return Math.pow(asDouble(a), asDouble(b)); }
+  public Number sqrt(Object x){ return Math.sqrt(asDouble(x)); }
+  public Number floor(Object x){ return Math.floor(asDouble(x)); }
+  public Number ceil(Object x){ return Math.ceil(asDouble(x)); }
+  public Number randomRange(Object min, Object max){
+  double a = asDouble(min), b = asDouble(max);
+  double lo = Math.min(a,b), hi = Math.max(a,b);
+  // Only use integer range if both inputs are integral types (not Double/Float)
+  boolean minIntType = (min instanceof Integer) || (min instanceof Long) || (min instanceof Short) || (min instanceof Byte);
+  boolean maxIntType = (max instanceof Integer) || (max instanceof Long) || (max instanceof Short) || (max instanceof Byte);
+  boolean intLike = minIntType && maxIntType;
+  if (intLike) {
+    int ilo = (int)lo; int ihi = (int)hi;
+    if (ihi < ilo) { int t=ilo; ilo=ihi; ihi=t; }
+    int span = (ihi - ilo + 1);
+    if (span <= 0) return ilo;
+    int r = ilo + (int)Math.floor(Math.random() * span);
+    return r;
+  } else {
+    return lo + Math.random() * (hi - lo);
+  }
+}public Boolean file_append(Object path, Object content){
+    try{
+      Path p = Paths.get(asString(path));
+      Path parent = p.getParent();
+      if(parent != null) Files.createDirectories(parent);
+      Files.write(p, asString(content).getBytes(StandardCharsets.UTF_8), java.nio.file.StandardOpenOption.CREATE, java.nio.file.StandardOpenOption.APPEND);
+      return true;
+    }catch(IOException e){ throw new RuntimeException(e); }
+  }
+
+  // ------------- built-ins: array -------------
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private static java.util.List asListOrThrow(Object a){
+    if (a instanceof java.util.List) return (java.util.List)a;
+    throw new RuntimeException("Expected array (list) but got: " + (a==null?"null":a.getClass().getSimpleName()));
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Number push(Object arr, Object value){
+    java.util.List list = asListOrThrow(arr);
+    list.add(value);
+    return list.size();
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object pop(Object arr){
+    java.util.List list = asListOrThrow(arr);
+    if (list.isEmpty()) return null;
+    return list.remove(list.size()-1);
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object shift(Object arr){
+    java.util.List list = asListOrThrow(arr);
+    if (list.isEmpty()) return null;
+    return list.remove(0);
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Number unshift(Object arr, Object value){
+    java.util.List list = asListOrThrow(arr);
+    list.add(0, value);
+    return list.size();
+  }
 }
