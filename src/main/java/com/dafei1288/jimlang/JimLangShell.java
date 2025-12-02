@@ -7,20 +7,30 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.ParseTree;
+import org.antlr.v4.runtime.ConsoleErrorListener;
 
 import java.util.Map;
 
 public class JimLangShell {
 
-    public Object eval(String script, Map<String, Object> context) {
-        CharStream stream = CharStreams.fromString(script);
+    public Object eval(String script, String sourceName, java.util.Map<String, Object> context) {
+        // Attach custom error listener for better diagnostics
+        CharStream stream = CharStreams.fromString(script, sourceName == null ? "<script>" : sourceName);
         JimLangLexer lexer = new JimLangLexer(stream);
         JimLangParser parser = new JimLangParser(new CommonTokenStream(lexer));
+        // remove default console error listener to avoid noisy stderr
+        parser.removeErrorListeners();
+        lexer.removeErrorListeners();
+        VerboseErrorListener vel = new VerboseErrorListener(script, sourceName);
+        parser.addErrorListener(vel);
+        lexer.addErrorListener(vel);
 
         ParseTree parseTree = parser.prog();
         JimLangVistor mlvistor = new JimLangVistor();
+        return mlvistor.visit(parseTree);
+    }
 
-        Object o = mlvistor.visit(parseTree);
-        return o;
+        public Object eval(String script, java.util.Map<String, Object> context) {
+        return eval(script, "<script>", context);
     }
 }

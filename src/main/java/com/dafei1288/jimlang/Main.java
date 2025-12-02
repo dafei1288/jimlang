@@ -1,52 +1,78 @@
 package com.dafei1288.jimlang;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
 /**
- * JimLang 命令行入口
+ * JimLang command line entry.
  *
- * 使用方式:
- *   jimlang <script.jim>        - 执行脚本文件
- *   jimlang --cli               - 启动 REPL（交互模式）
+ * Usage:
+ *   jimlang <script.jim>        - execute a script file
+ *   jimlang --cli | -i          - start interactive REPL
+ *   jimlang --eval "code"        - execute a one-liner snippet
  */
 public class Main {
 
     public static void main(String[] args) {
-        // 无参数 -> 打印帮助并退出
+        // No args => print help
         if (args.length == 0) {
             printUsage();
             System.exit(1);
         }
 
-        // 处理命令行参数
+        // Parse first argument as command
         String command = args[0];
 
-        // --version 或 -v
+        // --version or -v
         if ("--version".equals(command) || "-v".equals(command)) {
             System.out.println("JimLang version 1.0-SNAPSHOT (Phase 2 Complete)");
             System.out.println("Java version: " + System.getProperty("java.version"));
             System.exit(0);
         }
 
-        // --help 或 -h
+        // --help or -h
         if ("--help".equals(command) || "-h".equals(command)) {
             printUsage();
             System.exit(0);
         }
 
-        // --cli: 启动交互式 REPL
-        if ("--cli".equals(command)) {
+        // --cli or -i => REPL
+        if ("--cli".equals(command) || "-i".equals(command)) {
             Repl.main(new String[0]);
             System.exit(0);
         }
 
-        // 执行脚本文件
+        // --eval or -e => run a snippet
+        if ("--eval".equals(command) || "-e".equals(command)) {
+            if (args.length < 2) {
+                System.err.println("Error: --eval requires a code string");
+                System.exit(2);
+            }
+            String code = args[1];
+            JimLangShell shell = new JimLangShell();
+            shell.eval(code, "<eval>", null);
+            System.exit(0);
+        }
+
+        // Script path or '-' for STDIN
         String scriptPath = args[0];
 
         try {
+            if ("-".equals(scriptPath)) {
+                // read from STDIN
+                StringBuilder sb = new StringBuilder();
+                BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+                String ln;
+                while ((ln = br.readLine()) != null) { sb.append(ln).append("\n"); }
+                JimLangShell shell = new JimLangShell();
+                shell.eval(sb.toString(), "<stdin>", null);
+                System.exit(0);
+            }
+
             executeScript(scriptPath);
         } catch (IOException e) {
             System.err.println("Error reading file: " + scriptPath);
@@ -60,44 +86,37 @@ public class Main {
         }
     }
 
-    /**
-     * 执行脚本文件
-     */
+    // Execute a script file
     private static void executeScript(String scriptPath) throws IOException {
-        // 检查文件是否存在
         if (!Files.exists(Paths.get(scriptPath))) {
             throw new IOException("File not found: " + scriptPath);
         }
 
-        // 读取脚本内容
         List<String> lines = Files.readAllLines(Paths.get(scriptPath));
         String script = String.join("\n", lines);
 
-        // 执行脚本
         JimLangShell shell = new JimLangShell();
-        Object result = shell.eval(script, null);
+        Object result = shell.eval(script, scriptPath, null);
 
-        // 如果有返回值，打印结果（目前大多数语句通过 println 输出，所以这里可能为 null）
         if (result != null) {
             System.out.println("Result: " + result);
         }
     }
 
-    /**
-     * 打印使用说明
-     */
+    // Print usage
     private static void printUsage() {
         System.out.println("JimLang - A Simple Programming Language");
         System.out.println();
         System.out.println("Usage:");
-        System.out.println("  jimlang --cli           Start interactive REPL");
+        System.out.println("  jimlang --cli | -i       Start interactive REPL");
+        System.out.println("  jimlang --eval \"code\"   Execute a one-liner code snippet");
         System.out.println("  jimlang <script.jim>     Execute a JimLang script file");
         System.out.println("  jimlang --version        Show version information");
         System.out.println("  jimlang --help           Show this help message");
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  jimlang mycode.jim       Run mycode.jim");
-        System.out.println("  jimlang test.jim         Run test.jim");
+        System.out.println("  type code.jim | jimlang -    Run from STDIN (Windows)");
         System.out.println();
         System.out.println("For more information, visit: https://github.com/dafei1288/jimlang");
     }
