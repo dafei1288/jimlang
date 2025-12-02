@@ -1,4 +1,4 @@
-﻿(function(){
+(function(){
   var key = 'theme';
   var html = document.documentElement;
   try {

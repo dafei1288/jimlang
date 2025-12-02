@@ -1,4 +1,4 @@
-﻿# What is JimLang
+# What is JimLang
 
 JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮助大家入门语言开发领域。
 

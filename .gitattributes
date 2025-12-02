@@ -1,4 +1,21 @@
-# Enforce LF and UTF-8 for text files
-*.md text eol=lf
-*.g4 text eol=lf
+* text=auto
+
+# LF on Unix-style sources
+*.sh   text eol=lf
 *.java text eol=lf
+*.md   text eol=lf
+*.g4   text eol=lf
+*.js   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+
+# CRLF on Windows batch
+*.cmd  text eol=crlf
+*.bat  text eol=crlf
+
+# Binary files
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.jar  binary

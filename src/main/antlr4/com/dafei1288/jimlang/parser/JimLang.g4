@@ -1,4 +1,4 @@
-﻿grammar JimLang;
+grammar JimLang;
 
 prog:  statementList? EOF;
 

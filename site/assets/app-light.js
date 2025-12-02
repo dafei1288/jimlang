@@ -1,4 +1,4 @@
-﻿// Theme manager (light default): load saved theme or fall back to light; toggle on click; keep header padding
+// Theme manager (light default): load saved theme or fall back to light; toggle on click; keep header padding
 (function(){
   var key = 'theme';
   var html = document.documentElement;
