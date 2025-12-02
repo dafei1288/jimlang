@@ -27,7 +27,7 @@ public class JimLangShell {
 
         ParseTree parseTree = parser.prog();
         JimLangVistor mlvistor = new JimLangVistor();
-        return mlvistor.visit(parseTree);
+        try { return mlvistor.visit(parseTree); } catch (RuntimeException ex) { String sn = (sourceName==null?"<script>":sourceName); String msg = ex.getMessage(); if (msg==null || !msg.startsWith(sn+":")) { throw new RuntimeException(sn+": runtime error: "+msg, ex); } throw ex; }
     }
 
         public Object eval(String script, java.util.Map<String, Object> context) {
