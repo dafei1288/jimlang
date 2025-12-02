@@ -4,13 +4,13 @@
 
 ## 文件说明
 
-- `jimlang.cmd` - Windows 批处理文件
+- `jimlang.cmd` - Windows 批处理脚本
 - `jimlang.sh` - Unix/Linux/Mac Shell 脚本
 
 ## 使用前提
 
-1. **Java 21+** 必须已安装
-2. **项目已构建**：运行 `mvn clean package`
+1. 已安装 Java 21+
+2. 已构建项目：`mvn clean package`
 
 ## 基本用法
 
@@ -25,6 +25,9 @@ bin\jimlang.cmd --version
 
 REM 查看帮助
 bin\jimlang.cmd --help
+
+REM 启动 REPL
+bin\jimlang.cmd --cli
 ```
 
 ### Unix/Linux/Mac
@@ -38,17 +41,19 @@ bin/jimlang.sh --version
 
 # 查看帮助
 bin/jimlang.sh --help
+
+# 启动 REPL
+bin/jimlang.sh --cli
 ```
 
 ## 添加到 PATH（可选）
 
-将 bin 目录添加到系统 PATH 后，可以直接使用 `jimlang` 命令。
-
+将 `bin` 目录加入系统 PATH 后，可直接使用 `jimlang` 命令。
 详细说明请参考项目根目录的 `COMMAND_LINE_GUIDE.md`。
 
 ## 示例脚本
 
-在 `examples/` 目录中有多个示例：
+请参考 `examples/` 目录：
 - `test.jim` - 基础功能测试
 - `fibonacci_simple.jim` - 斐波那契数列
 
@@ -62,7 +67,6 @@ mvn clean package
 
 ## 更多信息
 
-参考项目根目录的文档：
 - `COMMAND_LINE_GUIDE.md` - 详细使用指南
 - `QUICKREF.md` - 语法快速参考
 - `README_ZH.md` - 项目介绍

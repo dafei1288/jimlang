@@ -8,14 +8,14 @@ import java.util.List;
 /**
  * JimLang 命令行入口
  *
- * 使用方式：
- *   jimlang script.jim           - 执行脚本文件
- *   jimlang                      - 进入 REPL 模式（未实现）
+ * 使用方式:
+ *   jimlang <script.jim>        - 执行脚本文件
+ *   jimlang --cli               - 启动 REPL（交互模式）
  */
 public class Main {
 
     public static void main(String[] args) {
-        // 显示版本信息
+        // 无参数 -> 打印帮助并退出
         if (args.length == 0) {
             printUsage();
             System.exit(1);
@@ -34,6 +34,12 @@ public class Main {
         // --help 或 -h
         if ("--help".equals(command) || "-h".equals(command)) {
             printUsage();
+            System.exit(0);
+        }
+
+        // --cli: 启动交互式 REPL
+        if ("--cli".equals(command)) {
+            Repl.main(new String[0]);
             System.exit(0);
         }
 
@@ -84,6 +90,7 @@ public class Main {
         System.out.println("JimLang - A Simple Programming Language");
         System.out.println();
         System.out.println("Usage:");
+        System.out.println("  jimlang --cli           Start interactive REPL");
         System.out.println("  jimlang <script.jim>     Execute a JimLang script file");
         System.out.println("  jimlang --version        Show version information");
         System.out.println("  jimlang --help           Show this help message");
