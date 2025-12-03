@@ -43,7 +43,8 @@ public class Main {
         }
 
         // Script path or '-' for STDIN
-        String scriptPath = args[0];
+        if (idx >= args.length) { printUsage(); System.exit(1); }
+        String scriptPath = args[idx];
 
         try {
             if ("-".equals(scriptPath)) {
