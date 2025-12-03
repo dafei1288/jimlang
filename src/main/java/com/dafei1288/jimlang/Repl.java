@@ -126,7 +126,17 @@ public class Repl {
       } catch (Exception ex) {
         System.out.println("Failed to load: " + path + " - " + ex.getMessage());
       }
-    } else {
+        } else if (cmd.startsWith(":trace")) {
+      String[] parts = cmd.split("\\s+");
+      if (parts.length>1 && ("on".equalsIgnoreCase(parts[1])||"true".equalsIgnoreCase(parts[1]))) {
+        com.dafei1288.jimlang.Trace.setEnabled(true);
+        System.out.println("trace: on");
+      } else if (parts.length>1 && ("off".equalsIgnoreCase(parts[1])||"false".equalsIgnoreCase(parts[1]))) {
+        com.dafei1288.jimlang.Trace.setEnabled(false);
+        System.out.println("trace: off");
+      } else {
+        System.out.println("Usage: :trace on|off");
+      }} else {
       System.out.println("Unknown command: " + command);
       System.out.println("Type :help for available commands");
     }
@@ -141,6 +151,7 @@ public class Repl {
     System.out.println("  :clear, :c      - Clear all variables and functions");
     System.out.println("  :reset          - Alias of :clear");
     System.out.println("  :load <file>    - Load and execute a file");
+    System.out.println("  :trace on|off   - Toggle function call tracing");
     System.out.println();
   }
 

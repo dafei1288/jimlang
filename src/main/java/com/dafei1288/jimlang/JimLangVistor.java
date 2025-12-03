@@ -367,7 +367,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
             List<Object> all = ctx.parameterList().singleExpression().stream().map(it->{
                 return this.visitSingleExpression(it);
             }).collect(Collectors.toList());
-            return Funcall.exec(functionName,all);
+            { com.dafei1288.jimlang.Trace.log("enter " + functionName); Object __ret = Funcall.exec(functionName,all); com.dafei1288.jimlang.Trace.log("leave " + functionName); return __ret; }
         }
         if(ctx.identifier() != null){ functionName = ctx.identifier().getText(); }
         SymbolFunction currentSymbol = (SymbolFunction) _sympoltable.get(functionName);
@@ -380,9 +380,9 @@ public class JimLangVistor extends JimLangBaseVisitor {
             }else{
                 all = java.util.Collections.emptyList();
             }
-            return Funcall.exec(functionName,all);
+            { com.dafei1288.jimlang.Trace.log("enter " + functionName); Object __ret = Funcall.exec(functionName,all); com.dafei1288.jimlang.Trace.log("leave " + functionName); return __ret; }
         }
-        if(currentSymbol != null){
+        if(currentSymbol != null){ com.dafei1288.jimlang.Trace.log("enter " + functionName); try {
             StackFrane stackFrane = new StackFrane(currentSymbol,functionName);
             List<Object> actualParams = null;
             if(ctx.parameterList() != null && ctx.parameterList().singleExpression() != null){
@@ -412,10 +412,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
                 if(funcDecl.functionBody().returnStatement() != null){
                     result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
                 }
-            }
-            _sympoltable = savedSymbolTable;
-            return result;
-        }
+            }            _sympoltable = savedSymbolTable; return result; } finally { com.dafei1288.jimlang.Trace.log("leave " + functionName); } }
         return super.visitFunctionCall(ctx);
     }
 
