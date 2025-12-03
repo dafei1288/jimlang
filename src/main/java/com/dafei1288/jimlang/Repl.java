@@ -75,6 +75,8 @@ public class Repl {
         JimLangParser parser = new JimLangParser(new CommonTokenStream(lexer));
         ParseTree parseTree = parser.prog();
 
+        mlvistor.setSourceName("<repl>");
+        mlvistor.setSourceText(scriptText);
         Object o = mlvistor.visit(parseTree);
         if (o != null) {
           System.out.println("=> " + o);
@@ -120,6 +122,8 @@ public class Repl {
         JimLangLexer lexer=new JimLangLexer(stream);
         JimLangParser parser = new JimLangParser(new CommonTokenStream(lexer));
         ParseTree parseTree = parser.prog();
+        visitor.setSourceName(path);
+        visitor.setSourceText(sc);
         Object o = visitor.visit(parseTree);
         if (o != null) { System.out.println("=> " + o); }
         System.out.println("Loaded: " + path);

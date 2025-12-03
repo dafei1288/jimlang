@@ -29,8 +29,26 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.Hashtable;
 
-public class JimLangVistor extends JimLangBaseVisitor {
-    Hashtable<String, Symbol> _sympoltable = new Hashtable<>();
+public class JimLangVistor extends JimLangBaseVisitor {    private String sourceName = "<script>";
+    private String[] sourceLines = new String[0];
+    public void setSourceName(String s){ this.sourceName = (s==null?"<script>":s); }
+    public void setSourceText(String txt){ this.sourceLines = (txt==null)? new String[0] : txt.split("\r?\n", -1); }
+    private RuntimeException error(String msg, org.antlr.v4.runtime.ParserRuleContext ctx){
+        int line=1,col=1;
+        if (ctx!=null && ctx.getStart()!=null){ line = ctx.getStart().getLine(); col = ctx.getStart().getCharPositionInLine()+1; }
+        StringBuilder sb = new StringBuilder();
+        sb.append(sourceName).append(":").append(line).append(":").append(col).append(": runtime error: ").append(msg);
+        if (line >= 1 && line <= sourceLines.length) {
+            String snippet = sourceLines[line-1];
+            sb.append(System.lineSeparator()).append(snippet);
+            int caretPos = Math.max(0, Math.min(col-1, 200));
+            StringBuilder caret = new StringBuilder();
+            for (int i=0;i<caretPos;i++) caret.append(' ');
+            caret.append('^');
+            sb.append(System.lineSeparator()).append(caret.toString());
+        }
+        return new RuntimeException(sb.toString());
+    }Hashtable<String, Symbol> _sympoltable = new Hashtable<>();
     Scope currentScope;
 
     // loop control flow exceptions
@@ -80,7 +98,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
         String baseName = lvc.identifier().getText();
         Symbol baseSymbol = _sympoltable.get(baseName);
         if (baseSymbol == null) {
-            throw new RuntimeException("Variable '" + baseName + "' is not defined");
+            throw error("Variable '" + baseName + "' is not defined", ctx);
         }
         java.util.List<JimLangParser.AccessorContext> accs = lvc.accessor();
         if (accs == null || accs.isEmpty()) {
@@ -92,32 +110,32 @@ public class JimLangVistor extends JimLangBaseVisitor {
             JimLangParser.AccessorContext ac = accs.get(i);
             if (ac.expression() != null) {
                 int idx = toInt(this.visit(ac.expression()));
-                if (!(holder instanceof java.util.List)) throw new RuntimeException("Index access on non-array");
+                if (!(holder instanceof java.util.List)) throw error("Index access on non-array", ctx);
                 java.util.List list = (java.util.List) holder;
-                if (idx < 0 || idx >= list.size()) throw new RuntimeException("Index out of bounds: " + idx);
+                if (idx < 0 || idx >= list.size()) throw error("Index out of bounds: " + idx, ctx);
                 holder = list.get(idx);
             } else {
                 String key = ac.identifier().getText();
                 if (holder instanceof java.util.Map) {
                     holder = ((java.util.Map) holder).get(key);
                 } else if (holder instanceof java.util.List && "length".equals(key)) {
-                    throw new RuntimeException("Cannot assign to 'length'");
+                    throw error("Cannot assign to 'length'", ctx);
                 } else {
-                    throw new RuntimeException("Property access on non-object");
+                    throw error("Property access on non-object", ctx);
                 }
             }
         }
         JimLangParser.AccessorContext last = accs.get(accs.size() - 1);
         if (last.expression() != null) {
             int idx = toInt(this.visit(last.expression()));
-            if (!(holder instanceof java.util.List)) throw new RuntimeException("Index access on non-array");
+            if (!(holder instanceof java.util.List)) throw error("Index access on non-array", ctx);
             java.util.List list = (java.util.List) holder;
-            if (idx < 0 || idx >= list.size()) throw new RuntimeException("Index out of bounds: " + idx);
+            if (idx < 0 || idx >= list.size()) throw error("Index out of bounds: " + idx, ctx);
             list.set(idx, newValue);
         } else {
             String key = last.identifier().getText();
-            if (!(holder instanceof java.util.Map)) throw new RuntimeException("Property access on non-object");
-            if ("length".equals(key)) throw new RuntimeException("Cannot assign to 'length'");
+            if (!(holder instanceof java.util.Map)) throw error("Property access on non-object", ctx);
+            if ("length".equals(key)) throw error("Cannot assign to 'length'", ctx);
             ((java.util.Map) holder).put(key, newValue);
         }
         return newValue;
@@ -153,7 +171,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
             for (int i = 0; i < ops; i++) {
                 String op = ctx.binOP(i).getText().trim();
                 Object right = this.visitPrimary(primaries.get(i + 1));
-                value = executeBinaryOperation(value, right, op);
+                value = executeBinaryOperation(value, right, op, ctx);
             }
             return value;
         }
@@ -304,7 +322,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
             _sympoltable.put(functionName,symbol);
         }
         return null;
-    }private Object executeBinaryOperation(Object left, Object right, String op) {
+    }private Object executeBinaryOperation(Object left, Object right, String op, org.antlr.v4.runtime.ParserRuleContext ctx) {
         if ("+".equals(op) && (left instanceof String || right instanceof String)) {
             return String.valueOf(left) + String.valueOf(right);
         }
@@ -317,7 +335,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
                     case "-": return l - r;
                     case "*": return l * r;
                     case "/":
-                        if (r == 0) throw new RuntimeException("Division by zero");
+                        if (r == 0) throw error("Division by zero", ctx);
                         return l / r;
                     case "%": return l % r;
                     case ">": return l > r;
@@ -326,7 +344,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
                     case "<=": return l <= r;
                     case "==": return l == r;
                     case "!=": return l != r;
-                    default: throw new RuntimeException("Unknown operator: " + op);
+                    default: throw error("Unknown operator: " + op, ctx);
                 }
             } else {
                 int l = ((Number) left).intValue();
@@ -336,7 +354,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
                     case "-": return l - r;
                     case "*": return l * r;
                     case "/":
-                        if (r == 0) throw new RuntimeException("Division by zero");
+                        if (r == 0) throw error("Division by zero", ctx);
                         return l / r;
                     case "%": return l % r;
                     case ">": return l > r;
@@ -345,13 +363,13 @@ public class JimLangVistor extends JimLangBaseVisitor {
                     case "<=": return l <= r;
                     case "==": return l == r;
                     case "!=": return l != r;
-                    default: throw new RuntimeException("Unknown operator: " + op);
+                    default: throw error("Unknown operator: " + op, ctx);
                 }
             }
         }
         if ("==".equals(op)) { return left.equals(right); }
         if ("!=".equals(op)) { return !left.equals(right); }
-        throw new RuntimeException("Cannot perform operation " + op + " on types " + left.getClass().getSimpleName() + " and " + right.getClass().getSimpleName());
+        throw error("Cannot perform operation " + op + " on types " + left.getClass().getSimpleName() + " and " + right.getClass().getSimpleName(), ctx);
     }
 
     @Override
@@ -361,62 +379,71 @@ public class JimLangVistor extends JimLangBaseVisitor {
 
     @Override
     public Object visitFunctionCall(FunctionCallContext ctx) {
-        String functionName = null;
-        if(ctx.sysfunction() != null){
-            functionName = ctx.sysfunction().getText();
-            List<Object> all = ctx.parameterList().singleExpression().stream().map(it->{
-                return this.visitSingleExpression(it);
-            }).collect(Collectors.toList());
-            { com.dafei1288.jimlang.Trace.log("enter " + functionName); Object __ret = Funcall.exec(functionName,all); com.dafei1288.jimlang.Trace.log("leave " + functionName); return __ret; }
+    String functionName = null;
+    if (ctx.sysfunction() != null) {
+        functionName = ctx.sysfunction().getText();
+    } else if (ctx.identifier() != null) {
+        functionName = ctx.identifier().getText();
+    }
+
+    java.util.List<Object> actuals = new java.util.ArrayList<>();
+    if (ctx.parameterList() != null && ctx.parameterList().singleExpression() != null) {
+        for (JimLangParser.SingleExpressionContext se : ctx.parameterList().singleExpression()) {
+            actuals.add(this.visitSingleExpression(se));
         }
-        if(ctx.identifier() != null){ functionName = ctx.identifier().getText(); }
-        SymbolFunction currentSymbol = (SymbolFunction) _sympoltable.get(functionName);
-        if(currentSymbol == null && Funcall.isSysFunction(functionName)){
-            java.util.List<Object> all = null;
-            if(ctx.parameterList() != null && ctx.parameterList().singleExpression() != null){
-                all = ctx.parameterList().singleExpression().stream().map(it->{
-                    return this.visitSingleExpression(it);
-                }).collect(java.util.stream.Collectors.toList());
-            }else{
-                all = java.util.Collections.emptyList();
-            }
-            { com.dafei1288.jimlang.Trace.log("enter " + functionName); Object __ret = Funcall.exec(functionName,all); com.dafei1288.jimlang.Trace.log("leave " + functionName); return __ret; }
+    }
+
+    // built-in function
+    if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(functionName)) {
+        com.dafei1288.jimlang.Trace.push(functionName + "()");
+        com.dafei1288.jimlang.Trace.log("enter " + functionName);
+        try {
+            return com.dafei1288.jimlang.sys.Funcall.exec(functionName, actuals);
+        } finally {
+            com.dafei1288.jimlang.Trace.log("leave " + functionName);
+            com.dafei1288.jimlang.Trace.pop();
         }
-        if(currentSymbol != null){ com.dafei1288.jimlang.Trace.push(functionName + "()"); com.dafei1288.jimlang.Trace.log("enter " + functionName); com.dafei1288.jimlang.Trace.log("enter " + functionName); try {
-            StackFrane stackFrane = new StackFrane(currentSymbol,functionName);
-            List<Object> actualParams = null;
-            if(ctx.parameterList() != null && ctx.parameterList().singleExpression() != null){
-                actualParams = ctx.parameterList().singleExpression().stream().map(it->{
-                    return this.visitSingleExpression(it);
-                }).collect(Collectors.toList());
-            }
-            List<String> formalParams = currentSymbol.getParameterList();
-            Hashtable<String, Symbol> savedSymbolTable = new Hashtable<>(_sympoltable);
-            if(formalParams != null && actualParams != null){
-                if(formalParams.size() != actualParams.size()){
-                    throw new RuntimeException("Function " + functionName + " expects " + formalParams.size() + " arguments but got " + actualParams.size());
+    }
+
+    // user-defined function
+    SymbolFunction currentSymbol = (SymbolFunction) _sympoltable.get(functionName);
+    if (currentSymbol != null) {
+        com.dafei1288.jimlang.Trace.push(functionName + "()");
+        com.dafei1288.jimlang.Trace.log("enter " + functionName);
+        java.util.Hashtable<String, Symbol> savedSymbolTable = new java.util.Hashtable<>(_sympoltable);
+        try {
+            java.util.List<String> formalParams = currentSymbol.getParameterList();
+            if (formalParams != null) {
+                if (formalParams.size() != actuals.size()) {
+                    throw error("Function " + functionName + " expects " + formalParams.size() + " arguments but got " + actuals.size(), ctx);
                 }
-                for(int i = 0; i < formalParams.size(); i++){
+                for (int i = 0; i < formalParams.size(); i++) {
                     SymbolVar paramVar = new SymbolVar();
                     paramVar.setName(formalParams.get(i));
-                    paramVar.setValue(actualParams.get(i));
+                    paramVar.setValue(actuals.get(i));
                     _sympoltable.put(formalParams.get(i), paramVar);
                 }
             }
             Object result = null;
             FunctionDeclContext funcDecl = (FunctionDeclContext) currentSymbol.getParseTree();
-            if(funcDecl != null && funcDecl.functionBody() != null){
-                if(funcDecl.functionBody().statementList() != null){
+            if (funcDecl != null && funcDecl.functionBody() != null) {
+                if (funcDecl.functionBody().statementList() != null) {
                     this.visit(funcDecl.functionBody().statementList());
                 }
-                if(funcDecl.functionBody().returnStatement() != null){
+                if (funcDecl.functionBody().returnStatement() != null) {
                     result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
                 }
-            }            _sympoltable = savedSymbolTable; com.dafei1288.jimlang.Trace.log("leave " + functionName); com.dafei1288.jimlang.Trace.pop(); return result; } finally { com.dafei1288.jimlang.Trace.log("leave " + functionName); } }
-        return super.visitFunctionCall(ctx);
+            }
+            return result;
+        } finally {
+            _sympoltable = savedSymbolTable;
+            com.dafei1288.jimlang.Trace.log("leave " + functionName);
+            com.dafei1288.jimlang.Trace.pop();
+        }
     }
 
-    @Override
+    return super.visitFunctionCall(ctx);
+}@Override
     public Object visitSysfunction(SysfunctionContext ctx) {
         String functionName = ctx.getText();
         return super.visitSysfunction(ctx);
@@ -431,9 +458,9 @@ public class JimLangVistor extends JimLangBaseVisitor {
             for (JimLangParser.AccessorContext ac : accs) {
                 if (ac.expression() != null) {
                     int idx = toInt(this.visit(ac.expression()));
-                    if (!(value instanceof java.util.List)) throw new RuntimeException("Index access on non-array");
+                    if (!(value instanceof java.util.List)) throw error("Index access on non-array", ctx);
                     java.util.List list = (java.util.List) value;
-                    if (idx < 0 || idx >= list.size()) throw new RuntimeException("Index out of bounds: " + idx);
+                    if (idx < 0 || idx >= list.size()) throw error("Index out of bounds: " + idx, ctx);
                     value = list.get(idx);
                 } else {
                     String key = ac.identifier().getText();
@@ -444,7 +471,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
                     } else if (value instanceof String && "length".equals(key)) {
                         value = ((String) value).length();
                     } else {
-                        throw new RuntimeException("Property access on non-object");
+                        throw error("Property access on non-object", ctx);
                     }
                 }
             }
@@ -456,7 +483,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
         if (ctx.identifier() != null) {
             String name = ctx.identifier().getText();
             Symbol sym = _sympoltable.get(name);
-            if (sym == null) throw new RuntimeException("Variable '" + name + "' is not defined");
+            if (sym == null) throw error("Variable '" + name + "' is not defined", ctx);
             return sym.getValue();
         }
         if (ctx.constVar() != null) return this.visitConstVar(ctx.constVar());
@@ -495,4 +522,3 @@ public class JimLangVistor extends JimLangBaseVisitor {
     public Object visitBreakStatement(JimLangParser.BreakStatementContext ctx){ throw new BreakException(); }
     public Object visitContinueStatement(JimLangParser.ContinueStatementContext ctx){ throw new ContinueException(); }
 }
-
