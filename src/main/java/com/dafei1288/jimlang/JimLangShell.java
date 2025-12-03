@@ -30,7 +30,7 @@ public class JimLangShell {
             StringBuilder sb = new StringBuilder();
             sb.append(msg == null ? "" : msg);
             java.util.List<String> st = com.dafei1288.jimlang.Trace.snapshot();
-            if (st != null && !st.isEmpty()) {
+            if (st != null && !st.isEmpty() && (msg == null || msg.indexOf("Call stack:") < 0)) {
                 sb.append(System.lineSeparator()).append("Call stack:");
                 for (String f : st) sb.append(System.lineSeparator()).append("  at ").append(f);
             }

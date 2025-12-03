@@ -47,7 +47,12 @@ public class JimLangVistor extends JimLangBaseVisitor {    private String source
             caret.append('^');
             sb.append(System.lineSeparator()).append(caret.toString());
         }
-        return new RuntimeException(sb.toString());
+        java.util.List<String> st = com.dafei1288.jimlang.Trace.snapshot();
+if (st != null && !st.isEmpty()) {
+    sb.append(System.lineSeparator()).append("Call stack:");
+    for (String f : st) sb.append(System.lineSeparator()).append("  at ").append(f);
+}
+return new RuntimeException(sb.toString());
     }Hashtable<String, Symbol> _sympoltable = new Hashtable<>();
     Scope currentScope;
 
