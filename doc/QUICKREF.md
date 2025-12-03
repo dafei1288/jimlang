@@ -24,7 +24,7 @@ var nested = { a: { b: 2 } }
 println(nested.a.b)  # 2
 ```
 
-## 常用函数
+## 甯哥敤鍑芥暟
   - contains(s, sub) -> boolean
   - replace(s, target, repl) -> string
   - startsWith(s, prefix) / endsWith(s, suffix) -> boolean
@@ -34,10 +34,14 @@ println(nested.a.b)  # 2
   - randomRange(min, max) ->  [min, max)
   - file_append(path, content) -> boolean,UTF-8
 
-## 数组（新增）
+## 鏁扮粍锛堟柊澧烇級
 
-- push(arr, value) -> number（返回新长度）
-- pop(arr) -> any | null（移除并返回最后一个元素）
-- shift(arr) -> any | null（移除并返回第一个元素）
-- unshift(arr, value) -> number（返回新长度）
-- split(s, sep) -> array（返回字符串数组）
+- push(arr, value) -> number锛堣繑鍥炴柊闀垮害锛?- pop(arr) -> any | null锛堢Щ闄ゅ苟杩斿洖鏈€鍚庝竴涓厓绱狅級
+- shift(arr) -> any | null锛堢Щ闄ゅ苟杩斿洖绗竴涓厓绱狅級
+- unshift(arr, value) -> number锛堣繑鍥炴柊闀垮害锛?- split(s, sep) -> array锛堣繑鍥炲瓧绗︿覆鏁扮粍锛?
+## 类型与集合（新增）
+- typeof(x) -> "number"|"string"|"boolean"|"array"|"object"|"null"
+- isArray(x) / isObject(x) -> boolean
+- keys(obj) -> array; values(obj) -> array
+- join(arr, sep) -> string
+- parseInt(s) / parseFloat(s) -> number

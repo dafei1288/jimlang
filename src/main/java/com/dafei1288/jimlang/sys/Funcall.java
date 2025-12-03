@@ -64,7 +64,7 @@ public class Funcall {
 
   public static boolean isSysFunction(String functionName){
     if(functionName == null) return false;
-    return SYS_FUNCTION_NAMES.contains(functionName.toUpperCase(Locale.ROOT));
+    return SYS_FUNCTION_NAMES.contains(functionName.toUpperCase(Locale.ROOT)) || hasMethod(functionName);
   }
 
   public static Object exec(String functionName, List<Object> params){
@@ -292,4 +292,66 @@ public class Funcall {
     list.add(0, value);
     return list.size();
   }
-}
+  
+  // ------------- built-ins: type/introspection + collections -------------
+  @SuppressWarnings({"rawtypes"})
+  public String join(Object arr, Object sep){
+    java.util.List list = asListOrThrow(arr);
+    String s = asString(sep);
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < list.size(); i++){
+      if (i > 0) sb.append(s);
+      Object v = list.get(i);
+      sb.append(v == null ? "null" : String.valueOf(v));
+    }
+    return sb.toString();
+  }
+  
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public java.util.List keys(Object obj){
+    if (obj instanceof java.util.Map){
+      return new java.util.ArrayList(((java.util.Map)obj).keySet());
+    }
+    throw new RuntimeException("Expected object (map) but got: " + (obj==null?"null":obj.getClass().getSimpleName()));
+  }
+  
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public java.util.List values(Object obj){
+    if (obj instanceof java.util.Map){
+      return new java.util.ArrayList(((java.util.Map)obj).values());
+    }
+    throw new RuntimeException("Expected object (map) but got: " + (obj==null?"null":obj.getClass().getSimpleName()));
+  }
+  
+  public String typeof(Object x){
+    if (x == null) return "null";
+    if (x instanceof java.util.List) return "array";
+    if (x instanceof java.util.Map) return "object";
+    if (x instanceof String) return "string";
+    if (x instanceof Number) return "number";
+    if (x instanceof Boolean) return "boolean";
+    return x.getClass().getSimpleName();
+  }
+  
+  public Boolean isArray(Object x){ return (x instanceof java.util.List); }
+  public Boolean isObject(Object x){ return (x instanceof java.util.Map); }
+  
+  public Number parseInt(Object s){
+    String str = asString(s).trim();
+    if (str.isEmpty()) return 0;
+    return Integer.parseInt(str);
+  }
+  public Number parseFloat(Object s){
+    String str = asString(s).trim();
+    if (str.isEmpty()) return 0.0d;
+    return Double.parseDouble(str);
+  }
+
+
+  private static boolean hasMethod(String name){
+    if (name == null) return false;
+    for (Method m : new Funcall().getClass().getMethods()){
+      if (m.getName().equalsIgnoreCase(name)) return true;
+    }
+    return false;
+  }}
