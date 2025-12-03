@@ -10,4 +10,5 @@ public final class Trace {
   public static void push(String frame){ STACK.get().push(frame); }
   public static void pop(){ java.util.ArrayDeque<String> d = STACK.get(); if (!d.isEmpty()) d.pop(); }
   public static java.util.List<String> snapshot(){ return new java.util.ArrayList<>(STACK.get()); }
+  public static void clear(){ STACK.get().clear(); }
 }

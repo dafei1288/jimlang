@@ -25,6 +25,7 @@ public class Main {
         }
 
         // Parse first argument as command
+        for (String a : args) { if ("--trace".equals(a)) { com.dafei1288.jimlang.Trace.setEnabled(true); } }
         String command = args[0];
 
         // --version or -v
@@ -111,6 +112,7 @@ public class Main {
         System.out.println("  jimlang --cli | -i       Start interactive REPL");
         System.out.println("  jimlang --eval \"code\"   Execute a one-liner code snippet");
         System.out.println("  jimlang <script.jim>     Execute a JimLang script file");
+        System.out.println("  jimlang --trace         Enable function call tracing");
         System.out.println("  jimlang --version        Show version information");
         System.out.println("  jimlang --help           Show this help message");
         System.out.println();
