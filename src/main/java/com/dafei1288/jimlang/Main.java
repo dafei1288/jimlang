@@ -24,39 +24,22 @@ public class Main {
             System.exit(1);
         }
 
-        // Parse first argument as command
-        for (String a : args) { if ("--trace".equals(a)) { com.dafei1288.jimlang.Trace.setEnabled(true); } }
-        String command = args[0];
-
-        // --version or -v
-        if ("--version".equals(command) || "-v".equals(command)) {
-            System.out.println("JimLang version 1.0-SNAPSHOT (Phase 2 Complete)");
-            System.out.println("Java version: " + System.getProperty("java.version"));
-            System.exit(0);
-        }
-
-        // --help or -h
-        if ("--help".equals(command) || "-h".equals(command)) {
-            printUsage();
-            System.exit(0);
-        }
-
-        // --cli or -i => REPL
-        if ("--cli".equals(command) || "-i".equals(command)) {
-            Repl.main(new String[0]);
-            System.exit(0);
-        }
-
-        // --eval or -e => run a snippet
-        if ("--eval".equals(command) || "-e".equals(command)) {
-            if (args.length < 2) {
-                System.err.println("Error: --eval requires a code string");
-                System.exit(2);
+        // Parse options and detect command or script path
+        int idx = 0;
+        for (; idx < args.length; idx++) {
+            String a = args[idx];
+            if ("--trace".equals(a)) { com.dafei1288.jimlang.Trace.setEnabled(true); continue; }
+            if ("--version".equals(a) || "-v".equals(a)) { System.out.println("JimLang version 1.0-SNAPSHOT (Phase 2 Complete)"); System.out.println("Java version: " + System.getProperty("java.version")); System.exit(0); }
+            if ("--help".equals(a) || "-h".equals(a)) { printUsage(); System.exit(0); }
+            if ("--cli".equals(a) || "-i".equals(a)) { Repl.main(new String[0]); System.exit(0); }
+            if ("--eval".equals(a) || "-e".equals(a)) {
+                if (idx + 1 >= args.length) { System.err.println("Error: --eval requires a code string"); System.exit(2); }
+                String code = args[++idx];
+                JimLangShell shell = new JimLangShell();
+                shell.eval(code, "<eval>", null);
+                System.exit(0);
             }
-            String code = args[1];
-            JimLangShell shell = new JimLangShell();
-            shell.eval(code, "<eval>", null);
-            System.exit(0);
+            break; // non-option encountered -> likely script path
         }
 
         // Script path or '-' for STDIN
