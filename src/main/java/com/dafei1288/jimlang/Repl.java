@@ -126,7 +126,7 @@ public class Repl {
       } catch (Exception ex) {
         System.out.println("Failed to load: " + path + " - " + ex.getMessage());
       }
-        } else if (cmd.startsWith(":trace")) {
+        } else if (cmd.equals(":stack")) { java.util.List<String> st = com.dafei1288.jimlang.Trace.snapshot(); if (st.isEmpty()) { System.out.println("(empty)"); } else { for (String f : st) System.out.println(f); } } else if (cmd.startsWith(":trace")) {
       String[] parts = cmd.split("\\s+");
       if (parts.length>1 && ("on".equalsIgnoreCase(parts[1])||"true".equalsIgnoreCase(parts[1]))) {
         com.dafei1288.jimlang.Trace.setEnabled(true);
@@ -151,6 +151,7 @@ public class Repl {
     System.out.println("  :clear, :c      - Clear all variables and functions");
     System.out.println("  :reset          - Alias of :clear");
     System.out.println("  :load <file>    - Load and execute a file");
+    System.out.println("  :stack          - Show current call stack");
     System.out.println("  :trace on|off   - Toggle function call tracing");
     System.out.println();
   }

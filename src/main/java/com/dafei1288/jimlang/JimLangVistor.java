@@ -382,7 +382,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
             }
             { com.dafei1288.jimlang.Trace.log("enter " + functionName); Object __ret = Funcall.exec(functionName,all); com.dafei1288.jimlang.Trace.log("leave " + functionName); return __ret; }
         }
-        if(currentSymbol != null){ com.dafei1288.jimlang.Trace.log("enter " + functionName); try {
+        if(currentSymbol != null){ com.dafei1288.jimlang.Trace.push(functionName + "()"); com.dafei1288.jimlang.Trace.log("enter " + functionName); com.dafei1288.jimlang.Trace.log("enter " + functionName); try {
             StackFrane stackFrane = new StackFrane(currentSymbol,functionName);
             List<Object> actualParams = null;
             if(ctx.parameterList() != null && ctx.parameterList().singleExpression() != null){
@@ -412,7 +412,7 @@ public class JimLangVistor extends JimLangBaseVisitor {
                 if(funcDecl.functionBody().returnStatement() != null){
                     result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
                 }
-            }            _sympoltable = savedSymbolTable; return result; } finally { com.dafei1288.jimlang.Trace.log("leave " + functionName); } }
+            }            _sympoltable = savedSymbolTable; com.dafei1288.jimlang.Trace.log("leave " + functionName); com.dafei1288.jimlang.Trace.pop(); return result; } finally { com.dafei1288.jimlang.Trace.log("leave " + functionName); } }
         return super.visitFunctionCall(ctx);
     }
 
