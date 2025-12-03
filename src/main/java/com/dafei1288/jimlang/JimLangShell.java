@@ -26,8 +26,9 @@ public class JimLangShell {
         try {
             return visitor.visit(parseTree);
         } catch (RuntimeException ex) {
+            String msg = ex.getMessage();
             StringBuilder sb = new StringBuilder();
-            sb.append(src).append(": runtime error: ").append(ex.getMessage() == null ? "" : ex.getMessage());
+            sb.append(msg == null ? "" : msg);
             java.util.List<String> st = com.dafei1288.jimlang.Trace.snapshot();
             if (st != null && !st.isEmpty()) {
                 sb.append(System.lineSeparator()).append("Call stack:");
