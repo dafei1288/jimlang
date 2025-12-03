@@ -66,7 +66,8 @@ identifier: ID;
 
 sysfunction : 'print' | 'println' ;
 
-typeName :  'string' |  'number' |  'boolean' ;
+typeName :  'string' |  'number' |  'boolean' | 'int' | 'float' | 'array' | 'object' | qualifiedName ;
+qualifiedName: ID (DOT ID)* ;
 
 VAR                                 : 'var';
 FUNCTION                            : 'function';

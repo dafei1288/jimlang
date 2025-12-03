@@ -1,0 +1,2 @@
+var l:java.util.List = [1,2]
+println(join(l, ","))

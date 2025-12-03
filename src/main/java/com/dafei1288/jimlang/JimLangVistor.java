@@ -82,15 +82,13 @@ return new RuntimeException(sb.toString());
             symbol = new SymbolVar();
             symbol.setName(varName);
             symbol.setParseTree(ctx);
-            if(ctx.typeAnnotation()!=null && ctx.typeAnnotation().typeName()!=null){
-                symbol.setTypeName(ctx.typeAnnotation().typeName().getText());
-            }
+            if(ctx.typeAnnotation()!=null && ctx.typeAnnotation().typeName()!=null){ String tn = ctx.typeAnnotation().typeName().getText(); symbol.setTypeName(tn); try{ ((com.dafei1288.jimlang.metadata.SymbolVar)symbol).setExpectedType(com.dafei1288.jimlang.metadata.TypeDescriptor.parse(tn)); } catch(Exception ex){ throw error("Unknown type: "+tn, ctx); } }
             _sympoltable.put(varName,symbol);
         }
         for(AssignmentContext assignmentContext : ctx.assignment()){
             if(assignmentContext.expression() != null ){
                 Object o = this.visitExpression(assignmentContext.expression());
-                symbol.setValue(o);
+                com.dafei1288.jimlang.metadata.TypeDescriptor td = ((com.dafei1288.jimlang.metadata.SymbolVar)symbol).getExpectedType(); if(td!=null && !com.dafei1288.jimlang.metadata.TypeDescriptor.isAssignable(td,o)){ throw error("Type mismatch: expected "+symbol.getTypeName()+" but got "+(o==null?"null":o.getClass().getSimpleName()), ctx); } Object __coerced = com.dafei1288.jimlang.metadata.TypeDescriptor.coerceIfNeeded(td,o); symbol.setValue(__coerced);
             }
         }
         return null;
@@ -106,10 +104,7 @@ return new RuntimeException(sb.toString());
             throw error("Variable '" + baseName + "' is not defined", ctx);
         }
         java.util.List<JimLangParser.AccessorContext> accs = lvc.accessor();
-        if (accs == null || accs.isEmpty()) {
-            baseSymbol.setValue(newValue);
-            return newValue;
-        }
+        if (accs == null || accs.isEmpty()) { if(!(baseSymbol instanceof com.dafei1288.jimlang.metadata.SymbolVar)) { baseSymbol.setValue(newValue); return newValue; } com.dafei1288.jimlang.metadata.SymbolVar sv = (com.dafei1288.jimlang.metadata.SymbolVar)baseSymbol; com.dafei1288.jimlang.metadata.TypeDescriptor td = sv.getExpectedType(); if(td!=null && !com.dafei1288.jimlang.metadata.TypeDescriptor.isAssignable(td,newValue)){ throw error("Type mismatch: expected "+sv.getTypeName()+" but got "+(newValue==null?"null":newValue.getClass().getSimpleName()), ctx); } Object __coerced2 = com.dafei1288.jimlang.metadata.TypeDescriptor.coerceIfNeeded(td,newValue); sv.setValue(__coerced2); return __coerced2; }
         Object holder = baseSymbol.getValue();
         for (int i = 0; i < accs.size() - 1; i++) {
             JimLangParser.AccessorContext ac = accs.get(i);

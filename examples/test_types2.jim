@@ -1,0 +1,7 @@
+var i:int = 2
+var f:float = i
+println(f)
+var n:number = f
+println(n)
+var o:object = {a:1}
+println(keys(o).length)
