@@ -1,0 +1,33 @@
+// Functional helpers using delegate/partial/apply
+
+function map(arr, fn) {
+  var res = []
+  for (var i = 0; i < arr.length; i = i + 1) {
+    var v = apply(fn, arr[i])
+    push(res, v)
+  }
+  return res
+}
+
+
+function reduce(arr, fn, init) {
+  var acc = init
+  for (var i = 0; i < arr.length; i = i + 1) {
+    acc = apply(fn, acc, arr[i])
+  }
+  return acc
+}
+
+// demo
+var a = [1,2,3,4]
+function add(a,b){ return a + b }
+function isOdd(x){ return x - floor(x / 2) * 2 }
+
+var dAdd = delegate("add")
+var sum = reduce(a, dAdd, 0)
+println(sum)                     // 10
+
+
+var inc = partial(dAdd, 1)
+var b = map(a, inc)
+println( join(b, ",") )         // 2,3,4,5
