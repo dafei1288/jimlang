@@ -387,150 +387,24 @@ return new RuntimeException(sb.toString());
     public Object visitReturnStatement(ReturnStatementContext ctx) {
         return this.visitExpression(ctx.expression());
     }
-
     @Override
     public Object visitFunctionCall(FunctionCallContext ctx) {
-    String functionName = null;
-    if (ctx.sysfunction() != null) {
-        functionName = ctx.sysfunction().getText();
-    } else if (ctx.identifier() != null) {
-        functionName = ctx.identifier().getText();
+        String functionName = (ctx.sysfunction() != null) ? ctx.sysfunction().getText() : null;
+        java.util.List<Object> actuals = new java.util.ArrayList<>();
+        if (ctx.parameterList() != null && ctx.parameterList().singleExpression() != null) {
+            for (JimLangParser.SingleExpressionContext se : ctx.parameterList().singleExpression()) {
+                actuals.add(this.visitSingleExpression(se));
+            }
+        }
+        if (functionName != null && com.dafei1288.jimlang.sys.Funcall.isSysFunction(functionName)) {
+            com.dafei1288.jimlang.Trace.push(functionName + "()");
+            com.dafei1288.jimlang.Trace.log("enter " + functionName);
+            try { return com.dafei1288.jimlang.sys.Funcall.exec(functionName, actuals); }
+            finally { com.dafei1288.jimlang.Trace.log("leave " + functionName); com.dafei1288.jimlang.Trace.pop(); }
+        }
+        return super.visitFunctionCall(ctx);
     }
-
-    java.util.List<Object> actuals = new java.util.ArrayList<>();
-    if (ctx.parameterList() != null && ctx.parameterList().singleExpression() != null) {
-        for (JimLangParser.SingleExpressionContext se : ctx.parameterList().singleExpression()) {
-            actuals.add(this.visitSingleExpression(se));
-        }
-    }
-
-    // special: apply(delegateOrName, ...args)
-    if ("apply".equals(functionName)) {
-        java.util.List<Object> args = actuals;
-        if (args == null || args.isEmpty()) throw error("apply requires at least 1 argument", ctx);
-        Object target = args.get(0);
-        if (target == null && ctx.parameterList() != null && ctx.parameterList().singleExpression() != null && !ctx.parameterList().singleExpression().isEmpty()) {
-            String raw = ctx.parameterList().singleExpression(0).getText();
-            if (raw != null) {
-                if (raw.length() >= 2 && raw.charAt(0) == '"' && raw.charAt(raw.length()-1) == '"') {
-                    raw = raw.substring(1, raw.length()-1);
-                }
-                target = raw;
-            }
-        }        java.util.List<Object> rest = args.subList(1, args.size());
-        String targetName;
-        java.util.ArrayList<Object> callArgs = new java.util.ArrayList<>();
-        if (target instanceof com.dafei1288.jimlang.Delegate) {
-            com.dafei1288.jimlang.Delegate d = (com.dafei1288.jimlang.Delegate) target;
-            targetName = d.getName();
-            java.util.List<Object> b = d.getBound(); if (b != null) callArgs.addAll(b);
-        } else {
-            targetName = String.valueOf(target);
-        }
-        callArgs.addAll(rest);
-        if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(targetName)) {
-            com.dafei1288.jimlang.Trace.push(targetName+"() via apply");
-            try { return com.dafei1288.jimlang.sys.Funcall.exec(targetName, callArgs); }
-            finally { com.dafei1288.jimlang.Trace.pop(); }
-        }
-        SymbolFunction currentSymbol2 = (SymbolFunction) globals.get(targetName);
-        if (currentSymbol2 == null) throw error("Unknown function: "+targetName, ctx);
-        com.dafei1288.jimlang.Trace.push(targetName+"() via apply");
-        com.dafei1288.jimlang.Trace.log("enter "+targetName);
-        pushScope();
-        try {
-            java.util.List<String> formalParams = currentSymbol2.getParameterList();
-            if (formalParams != null) {
-                if (formalParams.size() != callArgs.size()) {
-                    throw error("Function "+targetName+" expects "+formalParams.size()+" arguments but got "+callArgs.size(), ctx);
-                }
-                for (int i = 0; i < formalParams.size(); i++) {
-                    SymbolVar paramVar = new SymbolVar();
-                    paramVar.setName(formalParams.get(i));
-                    paramVar.setValue(callArgs.get(i));
-                    current().put(formalParams.get(i), paramVar);
-                }
-            }
-            Object result = null;
-            FunctionDeclContext funcDecl = (FunctionDeclContext) currentSymbol2.getParseTree();
-            if (funcDecl != null && funcDecl.functionBody() != null) {
-                if (funcDecl.functionBody().statementList() != null) {
-                    this.visit(funcDecl.functionBody().statementList());
-                }
-                if (funcDecl.functionBody().returnStatement() != null) {
-                    result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
-                }
-            }
-            return result;
-        } finally {
-            popScope();
-            com.dafei1288.jimlang.Trace.log("leave "+targetName);
-            com.dafei1288.jimlang.Trace.pop();
-        }
-    }
-    // normalize delegate/partial first argument when user passes bare identifier (e.g., delegate(add))
-    if (("delegate".equals(functionName) || "partial".equals(functionName)) && actuals != null && !actuals.isEmpty()) {
-        if (actuals.get(0) == null && ctx.parameterList() != null && ctx.parameterList().singleExpression() != null && !ctx.parameterList().singleExpression().isEmpty()) {
-            // recover raw text of the first argument
-            String raw = ctx.parameterList().singleExpression(0).getText();
-            if (raw != null) {
-                // strip surrounding quotes if any
-                if (raw.length() >= 2 && raw.charAt(0) == '"' && raw.charAt(raw.length()-1) == '"') {
-                    raw = raw.substring(1, raw.length()-1);
-                }
-                actuals.set(0, raw);
-            }
-        }
-    }    // built-in function
-    if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(functionName)) {
-        com.dafei1288.jimlang.Trace.push(functionName + "()");
-        com.dafei1288.jimlang.Trace.log("enter " + functionName);
-        try {
-            return com.dafei1288.jimlang.sys.Funcall.exec(functionName, actuals);
-        } finally {
-            com.dafei1288.jimlang.Trace.log("leave " + functionName);
-            com.dafei1288.jimlang.Trace.pop();
-        }
-    }
-
-    // user-defined function
-    SymbolFunction currentSymbol = (SymbolFunction) globals.get(functionName);
-    if (currentSymbol != null) {
-        com.dafei1288.jimlang.Trace.push(functionName + "()");
-        com.dafei1288.jimlang.Trace.log("enter " + functionName);
-        pushScope();
-        try {
-            java.util.List<String> formalParams = currentSymbol.getParameterList();
-            if (formalParams != null) {
-                if (formalParams.size() != actuals.size()) {
-                    throw error("Function " + functionName + " expects " + formalParams.size() + " arguments but got " + actuals.size(), ctx);
-                }
-                for (int i = 0; i < formalParams.size(); i++) {
-                    SymbolVar paramVar = new SymbolVar();
-                    paramVar.setName(formalParams.get(i));
-                    paramVar.setValue(actuals.get(i));
-                    current().put(formalParams.get(i), paramVar);
-                }
-            }
-            Object result = null;
-            FunctionDeclContext funcDecl = (FunctionDeclContext) currentSymbol.getParseTree();
-            if (funcDecl != null && funcDecl.functionBody() != null) {
-                if (funcDecl.functionBody().statementList() != null) {
-                    this.visit(funcDecl.functionBody().statementList());
-                }
-                if (funcDecl.functionBody().returnStatement() != null) {
-                    result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
-                }
-            }
-            return result;
-        } finally { popScope();
-            com.dafei1288.jimlang.Trace.log("leave " + functionName);
-            com.dafei1288.jimlang.Trace.pop();
-        }
-    }
-
-    return super.visitFunctionCall(ctx);
-}@Override
+    @Override
     public Object visitSysfunction(SysfunctionContext ctx) {
         String functionName = ctx.getText();
         return super.visitSysfunction(ctx);

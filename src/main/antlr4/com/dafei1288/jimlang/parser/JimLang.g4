@@ -37,7 +37,7 @@ typeAnnotation : ':' typeName;
 functionDecl: FUNCTION identifier B_OPEN parameterList? B_CLOSE functionBody ';'? ;
 
 functionBody: C_OPEN statementList?  returnStatement? C_CLOSE;
-functionCall: (sysfunction |  identifier) '(' parameterList? ')';
+functionCall: sysfunction '(' parameterList? ')';
 
 expressionStatement: expression ';'? ;
 
