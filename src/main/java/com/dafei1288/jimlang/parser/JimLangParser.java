@@ -1595,14 +1595,14 @@ public class JimLangParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class AtomContext extends ParserRuleContext {
+		public FunctionCallContext functionCall() {
+			return getRuleContext(FunctionCallContext.class,0);
+		}
 		public IdentifierContext identifier() {
 			return getRuleContext(IdentifierContext.class,0);
 		}
 		public ConstVarContext constVar() {
 			return getRuleContext(ConstVarContext.class,0);
-		}
-		public FunctionCallContext functionCall() {
-			return getRuleContext(FunctionCallContext.class,0);
 		}
 		public ArrayLiteralContext arrayLiteral() {
 			return getRuleContext(ArrayLiteralContext.class,0);
@@ -1637,21 +1637,21 @@ public class JimLangParser extends Parser {
 				enterOuterAlt(_localctx, 1);
 				{
 				setState(235);
-				identifier();
+				functionCall();
 				}
 				break;
 			case 2:
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(236);
-				constVar();
+				identifier();
 				}
 				break;
 			case 3:
 				enterOuterAlt(_localctx, 3);
 				{
 				setState(237);
-				functionCall();
+				constVar();
 				}
 				break;
 			case 4:
@@ -2495,8 +2495,8 @@ public class JimLangParser extends Parser {
 		"\u00e6\u00e5\u0001\u0000\u0000\u0000\u00e7\u00ea\u0001\u0000\u0000\u0000"+
 		"\u00e8\u00e6\u0001\u0000\u0000\u0000\u00e8\u00e9\u0001\u0000\u0000\u0000"+
 		"\u00e9/\u0001\u0000\u0000\u0000\u00ea\u00e8\u0001\u0000\u0000\u0000\u00eb"+
-		"\u00f5\u0003@ \u0000\u00ec\u00f5\u0003:\u001d\u0000\u00ed\u00f5\u0003"+
-		"*\u0015\u0000\u00ee\u00f5\u00034\u001a\u0000\u00ef\u00f5\u00036\u001b"+
+		"\u00f5\u0003*\u0015\u0000\u00ec\u00f5\u0003@ \u0000\u00ed\u00f5\u0003"+
+		":\u001d\u0000\u00ee\u00f5\u00034\u001a\u0000\u00ef\u00f5\u00036\u001b"+
 		"\u0000\u00f0\u00f1\u0005*\u0000\u0000\u00f1\u00f2\u0003\u001e\u000f\u0000"+
 		"\u00f2\u00f3\u0005+\u0000\u0000\u00f3\u00f5\u0001\u0000\u0000\u0000\u00f4"+
 		"\u00eb\u0001\u0000\u0000\u0000\u00f4\u00ec\u0001\u0000\u0000\u0000\u00f4"+
