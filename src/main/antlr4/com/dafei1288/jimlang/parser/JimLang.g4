@@ -2,7 +2,7 @@ grammar JimLang;
 
 prog:  statementList? EOF;
 
-statementList : ( variableDecl | functionDecl | functionCall | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement | breakStatement | continueStatement )* ;
+statementList : (  variableDecl | functionDecl | functionCall | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement | breakStatement | continueStatement  | block )* ;
 
 assignment: '=' expression ';'? ;
 
