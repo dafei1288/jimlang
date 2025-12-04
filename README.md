@@ -2,7 +2,7 @@
 
 Jim Lang is a programming language based on JVM with a comprehensive language system, aimed at helping everyone get started in the field of language development.
 
-# Useage
+# Usage
 
 add snapshots repository
 ```xml
@@ -76,3 +76,23 @@ or use jsr-233
 
 
 # Roadmap
+## CLI Quick Start
+
+- Build: `mvn -q -DskipTests package`
+- Run a script: `bin\\jimlang.cmd examples\\fibonacci.jim`
+- Start REPL: `bin\\jimlang.cmd --cli` (or `-i`)
+- Eval one-liner: `bin\\jimlang.cmd --eval "println(1+2)"` (or `-e`)
+- Read from STDIN: `echo println(42) | bin\\jimlang.cmd -`
+- Enable trace: `bin\\jimlang.cmd --trace examples\\fibonacci.jim` (or set `JIM_TRACE=1`)
+
+See also:
+- `doc/QUICKREF.md` – language snippets, stdlib, CLI
+- `doc/ROADMAP.md` – phases, current status, TODO
+
+## Examples
+- `examples/fibonacci.jim` – Fibonacci sequence
+- `examples/stdlib_phase3.jim` – stdlib showcase
+- Scoping demos:
+  - `examples/scope_func.jim` – function-local shadowing
+  - `examples/scope_if.jim` – block scope shadowing
+  - `examples/scope_assign_outer.jim` – assign to outer var inside function
