@@ -1,20 +1,20 @@
 @echo off
-REM JimLang Windows 启动脚本
+REM JimLang Windows launcher script
 REM
-REM 使用方式:
+REM Usage:
 REM   jimlang.cmd script.jim
 REM   jimlang.cmd --help
 REM   jimlang.cmd --version
 
 setlocal
 
-REM 获取脚本所在目录（bin 目录）
+REM Resolve script directory (bin)
 set SCRIPT_DIR=%~dp0
 
-REM 设置 JAR 文件路径（位于 target 目录）
+REM Set JAR path (under target)
 set JIMLANG_JAR=%SCRIPT_DIR%..\target\jimlang-1.0-SNAPSHOT-jar-with-dependencies.jar
 
-REM 检查 JAR 文件是否存在
+REM Check JAR exists
 if not exist "%JIMLANG_JAR%" (
     echo Error: JimLang JAR file not found!
     echo Expected location: %JIMLANG_JAR%
@@ -25,7 +25,7 @@ if not exist "%JIMLANG_JAR%" (
     exit /b 1
 )
 
-REM 检查 Java 是否安装
+REM Check Java is installed
 java -version >nul 2>&1
 if errorlevel 1 (
     echo Error: Java is not installed or not in PATH
@@ -33,7 +33,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM 执行 JimLang
+REM Run JimLang
 java -jar "%JIMLANG_JAR%" %*
 
 endlocal
