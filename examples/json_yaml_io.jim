@@ -1,0 +1,10 @@
+// JSON/YAML file IO helpers demo
+var o = { a: 1, b: [2,3], name: "Jim" }
+
+json_dump(o, "tmp.json", 2)
+var x = json_load("tmp.json")
+println(x.name) // Jim
+
+yml_dump(o, "tmp.yml", 2)
+var m = yml_load("tmp.yml")
+println(m.a) // 1

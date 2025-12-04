@@ -392,6 +392,73 @@ public class Funcall {
   }
   public String json_encode(Object v){ return jsonStringify(v); }
 
+  // JSON pretty printing
+  public String json_pretty(Object v){ return json_pretty(v, 2); }
+  public String json_pretty(Object v, Object indent){
+    int step = 2; try { step = asInt(indent); } catch(Exception ignored) {}
+    StringBuilder sb = new StringBuilder();
+    prettyJson(v, sb, 0, Math.max(0, step));
+    return sb.toString();
+  }
+  @SuppressWarnings({"rawtypes"})
+  private static void prettyJson(Object v, StringBuilder sb, int level, int step){
+    String ind = (step<=0? "" : " ".repeat(level*step));
+    String ind2 = (step<=0? "" : " ".repeat((level+1)*step));
+    if (v == null) { sb.append("null"); return; }
+    if (v instanceof String) { sb.append('"').append(jsonEscape((String)v)).append('"'); return; }
+    if (v instanceof Number || v instanceof Boolean) { sb.append(String.valueOf(v)); return; }
+    if (v instanceof java.util.Map){
+      java.util.Map m = (java.util.Map)v;
+      sb.append('{'); if (!m.isEmpty()) sb.append('\n');
+      boolean first=true;
+      for (Object eObj : m.entrySet()){
+        java.util.Map.Entry e = (java.util.Map.Entry)eObj;
+        if (!first) sb.append(',').append('\n'); first=false;
+        sb.append(ind2).append('"').append(jsonEscape(String.valueOf(e.getKey()))).append('"').append(':');
+        if (step>0) sb.append(' ');
+        prettyJson(e.getValue(), sb, level+1, step);
+      }
+      if (!m.isEmpty()) { sb.append('\n').append(ind); }
+      sb.append('}');
+      return;
+    }
+    if (v instanceof java.util.List){
+      java.util.List a = (java.util.List)v;
+      sb.append('['); if (!a.isEmpty()) sb.append('\n');
+      for (int i=0;i<a.size();i++){
+        if (i>0) sb.append(',').append('\n');
+        sb.append(ind2);
+        prettyJson(a.get(i), sb, level+1, step);
+      }
+      if (!a.isEmpty()) { sb.append('\n').append(ind); }
+      sb.append(']');
+      return;
+    }
+    sb.append('"').append(jsonEscape(String.valueOf(v))).append('"');
+  }
+
+  // YAML encode with indentation option (if SnakeYAML present)
+  public String yml_encode(Object v, Object indent){
+    try{
+      Class<?> optClz = Class.forName("org.yaml.snakeyaml.DumperOptions");
+      Object opt = optClz.getConstructor().newInstance();
+      try { optClz.getMethod("setIndent", int.class).invoke(opt, asInt(indent)); } catch(Throwable ignore) {}
+      try { optClz.getMethod("setPrettyFlow", boolean.class).invoke(opt, true); } catch(Throwable ignore) {}
+      try {
+        Class<?> flowClz = Class.forName("org.yaml.snakeyaml.DumperOptions$FlowStyle");
+        Object BLOCK = flowClz.getField("BLOCK").get(null);
+        optClz.getMethod("setDefaultFlowStyle", flowClz).invoke(opt, BLOCK);
+      } catch(Throwable ignore) {}
+      Class<?> yamlClz = Class.forName("org.yaml.snakeyaml.Yaml");
+      Object y = yamlClz.getConstructor(optClz).newInstance(opt);
+      java.lang.reflect.Method dump = yamlClz.getMethod("dump", Object.class);
+      return (String) dump.invoke(y, v);
+    }catch(Throwable ignore){
+      // fallback simple formatting
+      return simpleYaml(v, 0);
+    }
+  }
+
   // minimal JSON parser
   private static class J {
     private final String s; private int i=0;
@@ -458,6 +525,29 @@ public class Funcall {
     }
     // treat name as function name
     return new com.dafei1288.jimlang.Delegate(asString(del)).withBound(arg);
+  }  
+  // ------------- JSON/YAML file helpers -------------
+  public Object json_load(Object path){
+    String s = file_read(path);
+    return json_decode(s);
+  }
+  public Boolean json_dump(Object v, Object path){
+    return file_write(path, json_encode(v));
+  }
+  public Boolean json_dump(Object v, Object path, Object indent){
+    int step = asInt(indent);
+    String s = (step > 0) ? json_pretty(v, step) : json_encode(v);
+    return file_write(path, s);
+  }
+  public Object yml_load(Object path){
+    String s = file_read(path);
+    return yml_decode(s);
+  }
+  public Boolean yml_dump(Object v, Object path){
+    return file_write(path, yml_encode(v));
+  }
+  public Boolean yml_dump(Object v, Object path, Object indent){
+    return file_write(path, yml_encode(v, indent));
   }private static boolean hasMethod(String name){
     if (name == null) return false;
     for (Method m : new Funcall().getClass().getMethods()){
