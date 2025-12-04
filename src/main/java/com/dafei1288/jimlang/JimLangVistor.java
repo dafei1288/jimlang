@@ -461,7 +461,7 @@ return new RuntimeException(sb.toString());
                 }
                 throw error("Variable '" + name + "' is not defined", ctx);
             }
-            return sym.getValue();
+            if (sym instanceof SymbolFunction) { return new com.dafei1288.jimlang.Delegate(name); } return sym.getValue();
         }
         if (ctx.constVar() != null) return this.visitConstVar(ctx.constVar());
         if (ctx.functionCall() != null) return this.visitFunctionCall(ctx.functionCall());
