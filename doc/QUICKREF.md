@@ -24,7 +24,7 @@ var nested = { a: { b: 2 } }
 println(nested.a.b)  # 2
 ```
 
-## 甯哥敤鍑芥暟
+## 鐢摜鏁ら崙鑺ユ殶
   - contains(s, sub) -> boolean
   - replace(s, target, repl) -> string
   - startsWith(s, prefix) / endsWith(s, suffix) -> boolean
@@ -34,14 +34,55 @@ println(nested.a.b)  # 2
   - randomRange(min, max) ->  [min, max)
   - file_append(path, content) -> boolean,UTF-8
 
-## 鏁扮粍锛堟柊澧烇級
-
-- push(arr, value) -> number锛堣繑鍥炴柊闀垮害锛?- pop(arr) -> any | null锛堢Щ闄ゅ苟杩斿洖鏈€鍚庝竴涓厓绱狅級
-- shift(arr) -> any | null锛堢Щ闄ゅ苟杩斿洖绗竴涓厓绱狅級
-- unshift(arr, value) -> number锛堣繑鍥炴柊闀垮害锛?- split(s, sep) -> array锛堣繑鍥炲瓧绗︿覆鏁扮粍锛?
-## 类型与集合（新增）
-- typeof(x) -> "number"|"string"|"boolean"|"array"|"object"|"null"
+## 閺佹壆绮嶉敍鍫熸煀婢х儑绱?
+- push(arr, value) -> number閿涘牐绻戦崶鐐存煀闂€鍨閿?- pop(arr) -> any | null閿涘牏些闂勩倕鑻熸潻鏂挎礀閺堚偓閸氬簼绔存稉顏勫帗缁辩媴绱?- shift(arr) -> any | null閿涘牏些闂勩倕鑻熸潻鏂挎礀缁楊兛绔存稉顏勫帗缁辩媴绱?- unshift(arr, value) -> number閿涘牐绻戦崶鐐存煀闂€鍨閿?- split(s, sep) -> array閿涘牐绻戦崶鐐茬摟缁楋缚瑕嗛弫鎵矋閿?
+## 绫诲瀷涓庨泦鍚堬紙鏂板锛?- typeof(x) -> "number"|"string"|"boolean"|"array"|"object"|"null"
 - isArray(x) / isObject(x) -> boolean
 - keys(obj) -> array; values(obj) -> array
 - join(arr, sep) -> string
 - parseInt(s) / parseFloat(s) -> number
+## CLI Quick Usage
+
+- Start REPL: `jimlang --cli` or `jimlang -i`
+- Eval one-liner: `jimlang --eval "println(1+2)"` or `jimlang -e "..."`
+- Read from STDIN: `echo println(42) | jimlang -`
+- Enable trace: `jimlang --trace examples/fibonacci.jim` (or `set JIM_TRACE=1`)
+
+## Scoping (Function & Block)
+
+Function-local shadowing:
+
+```jim
+var x = 1
+function f(){ var x = 2; println(x) }
+f()
+println(x)
+# Output:
+# 2
+# 1
+```
+
+Independent block scope (shadowing inside block):
+
+```jim
+var x = 1
+if (true) {
+  var x = 2
+  println("in:" + x)
+}
+println("out:" + x)
+# Output:
+# in:2
+# out:1
+```
+
+Assign to outer variable from function:
+
+```jim
+var y = 1
+function g(){ y = 3 }
+g()
+println(y)
+# Output:
+# 3
+```
