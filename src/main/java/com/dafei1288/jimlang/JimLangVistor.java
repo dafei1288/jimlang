@@ -409,7 +409,15 @@ return new RuntimeException(sb.toString());
         java.util.List<Object> args = actuals;
         if (args == null || args.isEmpty()) throw error("apply requires at least 1 argument", ctx);
         Object target = args.get(0);
-        java.util.List<Object> rest = args.subList(1, args.size());
+        if (target == null && ctx.parameterList() != null && ctx.parameterList().singleExpression() != null && !ctx.parameterList().singleExpression().isEmpty()) {
+            String raw = ctx.parameterList().singleExpression(0).getText();
+            if (raw != null) {
+                if (raw.length() >= 2 && raw.charAt(0) == '"' && raw.charAt(raw.length()-1) == '"') {
+                    raw = raw.substring(1, raw.length()-1);
+                }
+                target = raw;
+            }
+        }        java.util.List<Object> rest = args.subList(1, args.size());
         String targetName;
         java.util.ArrayList<Object> callArgs = new java.util.ArrayList<>();
         if (target instanceof com.dafei1288.jimlang.Delegate) {
