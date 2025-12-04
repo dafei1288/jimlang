@@ -1,0 +1,4 @@
+var x = 1
+function f(){ var x = 2; println(x) }
+f()
+println(x)

@@ -1,0 +1,4 @@
+var y = 1
+function g(){ y = 3 }
+g()
+println(y)

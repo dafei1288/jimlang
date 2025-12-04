@@ -1,0 +1,6 @@
+var x = 1
+if (true) {
+  var x = 2
+  println("in:" + x)
+}
+println("out:" + x)
