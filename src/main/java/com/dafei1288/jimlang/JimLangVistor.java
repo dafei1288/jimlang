@@ -540,15 +540,17 @@ return new RuntimeException(sb.toString());
     @Override
     public Object visitPrimary(JimLangParser.PrimaryContext ctx) {
         Object value = this.visitAtom(ctx.atom());
-        List<JimLangParser.AccessorContext> accs = ctx.accessor();
-        if (accs != null) {
-            for (JimLangParser.AccessorContext ac : accs) {
+        int n = ctx.getChildCount();
+        for (int i = 1; i < n; i++) {
+            org.antlr.v4.runtime.tree.ParseTree ch = ctx.getChild(i);
+            if (ch instanceof com.dafei1288.jimlang.parser.JimLangParser.AccessorContext) {
+                com.dafei1288.jimlang.parser.JimLangParser.AccessorContext ac = (com.dafei1288.jimlang.parser.JimLangParser.AccessorContext) ch;
                 if (ac.expression() != null) {
-                    int idx = toInt(this.visit(ac.expression()));
+                    int idx2 = toInt(this.visit(ac.expression()));
                     if (!(value instanceof java.util.List)) throw error("Index access on non-array", ctx);
                     java.util.List list = (java.util.List) value;
-                    if (idx < 0 || idx >= list.size()) throw error("Index out of bounds: " + idx, ctx);
-                    value = list.get(idx);
+                    if (idx2 < 0 || idx2 >= list.size()) throw error("Index out of bounds: " + idx2, ctx);
+                    value = list.get(idx2);
                 } else {
                     String key = ac.identifier().getText();
                     if (value instanceof java.util.Map) {
@@ -561,6 +563,15 @@ return new RuntimeException(sb.toString());
                         throw error("Property access on non-object", ctx);
                     }
                 }
+            } else if (ch instanceof com.dafei1288.jimlang.parser.JimLangParser.CallSuffixContext) {
+                com.dafei1288.jimlang.parser.JimLangParser.CallSuffixContext cs = (com.dafei1288.jimlang.parser.JimLangParser.CallSuffixContext) ch;
+                java.util.ArrayList<Object> args = new java.util.ArrayList<>();
+                if (cs.parameterList() != null && cs.parameterList().singleExpression() != null) {
+                    for (com.dafei1288.jimlang.parser.JimLangParser.SingleExpressionContext se : cs.parameterList().singleExpression()) {
+                        args.add(this.visitSingleExpression(se));
+                    }
+                }
+                value = invokeCallable(value, args, ctx);
             }
         }
         return value;
@@ -570,7 +581,12 @@ return new RuntimeException(sb.toString());
         if (ctx.identifier() != null) {
             String name = ctx.identifier().getText();
             Symbol sym = findSymbol(name);
-            if (sym == null) throw error("Variable '" + name + "' is not defined", ctx);
+            if (sym == null) {
+                if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(name) || (globals.get(name) instanceof SymbolFunction)) {
+                    return new com.dafei1288.jimlang.Delegate(name);
+                }
+                throw error("Variable '" + name + "' is not defined", ctx);
+            }
             return sym.getValue();
         }
         if (ctx.constVar() != null) return this.visitConstVar(ctx.constVar());
@@ -608,4 +624,56 @@ return new RuntimeException(sb.toString());
     // break/continue statements
     public Object visitBreakStatement(JimLangParser.BreakStatementContext ctx){ throw new BreakException(); }
     public Object visitContinueStatement(JimLangParser.ContinueStatementContext ctx){ throw new ContinueException(); }
-}
+    private Object invokeCallable(Object target, java.util.List<Object> args, org.antlr.v4.runtime.ParserRuleContext ctx) {
+        String targetName;
+        java.util.ArrayList<Object> callArgs = new java.util.ArrayList<>();
+        if (target instanceof com.dafei1288.jimlang.Delegate) {
+            com.dafei1288.jimlang.Delegate d = (com.dafei1288.jimlang.Delegate) target;
+            targetName = d.getName();
+            java.util.List<Object> b = d.getBound(); if (b != null) callArgs.addAll(b);
+        } else if (target == null) {
+            throw error("Call on null", ctx);
+        } else {
+            targetName = String.valueOf(target);
+        }
+        callArgs.addAll(args);
+        if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(targetName)) {
+            com.dafei1288.jimlang.Trace.push(targetName + "() via call");
+            try { return com.dafei1288.jimlang.sys.Funcall.exec(targetName, callArgs); }
+            finally { com.dafei1288.jimlang.Trace.pop(); }
+        }
+        SymbolFunction f = (SymbolFunction) globals.get(targetName);
+        if (f == null) throw error("Unknown function: " + targetName, ctx);
+        com.dafei1288.jimlang.Trace.push(targetName + "() via call");
+        com.dafei1288.jimlang.Trace.log("enter " + targetName);
+        pushScope();
+        try {
+            java.util.List<String> formalParams = f.getParameterList();
+            if (formalParams != null) {
+                if (formalParams.size() != callArgs.size()) {
+                    throw error("Function " + targetName + " expects " + formalParams.size() + " arguments but got " + callArgs.size(), ctx);
+                }
+                for (int i = 0; i < formalParams.size(); i++) {
+                    SymbolVar paramVar = new SymbolVar();
+                    paramVar.setName(formalParams.get(i));
+                    paramVar.setValue(callArgs.get(i));
+                    current().put(formalParams.get(i), paramVar);
+                }
+            }
+            Object result = null;
+            FunctionDeclContext funcDecl = (FunctionDeclContext) f.getParseTree();
+            if (funcDecl != null && funcDecl.functionBody() != null) {
+                if (funcDecl.functionBody().statementList() != null) {
+                    this.visit(funcDecl.functionBody().statementList());
+                }
+                if (funcDecl.functionBody().returnStatement() != null) {
+                    result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
+                }
+            }
+            return result;
+        } finally {
+            popScope();
+            com.dafei1288.jimlang.Trace.log("leave " + targetName);
+            com.dafei1288.jimlang.Trace.pop();
+        }
+    }}

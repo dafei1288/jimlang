@@ -42,7 +42,7 @@ functionCall: (sysfunction |  identifier) '(' parameterList? ')';
 expressionStatement: expression ';'? ;
 
 // primary with chained accessors
-primary: atom (accessor)* ;
+primary: atom (accessor | callSuffix)* ;
 atom: functionCall
     | identifier
     | constVar
@@ -50,6 +50,8 @@ atom: functionCall
     | objectLiteral
     | '(' expression ')'
     ;accessor: '[' expression ']' | '.' identifier ;
+
+callSuffix: '(' parameterList? ')';
 
 // literals
 arrayLiteral: S_OPEN (expression (COMMA expression)*)? S_CLOSE ;

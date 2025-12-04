@@ -518,7 +518,7 @@ public class Funcall {
   }
 
   // delegates
-  public Object delegate(Object name){ return new com.dafei1288.jimlang.Delegate(asString(name)); }
+  public Object delegate(Object name){ if (name instanceof com.dafei1288.jimlang.Delegate) return name; return new com.dafei1288.jimlang.Delegate(asString(name)); }
   public Object partial(Object del, Object arg){
     if (del instanceof com.dafei1288.jimlang.Delegate){
       return ((com.dafei1288.jimlang.Delegate)del).withBound(arg);
