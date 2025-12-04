@@ -43,14 +43,13 @@ expressionStatement: expression ';'? ;
 
 // primary with chained accessors
 primary: atom (accessor)* ;
-atom: identifier
+atom: functionCall
+    | identifier
     | constVar
-    | functionCall
     | arrayLiteral
     | objectLiteral
     | '(' expression ')'
-    ;
-accessor: '[' expression ']' | '.' identifier ;
+    ;accessor: '[' expression ']' | '.' identifier ;
 
 // literals
 arrayLiteral: S_OPEN (expression (COMMA expression)*)? S_CLOSE ;

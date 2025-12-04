@@ -348,7 +348,117 @@ public class Funcall {
   }
 
 
-  private static boolean hasMethod(String name){
+    // ------------- built-ins: JSON/YAML and delegates -------------
+  private static String jsonEscape(String s){
+    StringBuilder sb = new StringBuilder();
+    for (int i=0;i<s.length();i++){
+      char c = s.charAt(i);
+      switch(c){
+        case '"': sb.append("\\\""); break;
+        case '\\': sb.append("\\\\"); break;
+        case '\n': sb.append("\\n"); break;
+        case '\r': sb.append("\\r"); break;
+        case '\t': sb.append("\\t"); break;
+        default:
+          if (c < 0x20) { sb.append(String.format("\\u%04x", (int)c)); }
+          else sb.append(c);
+      }
+    }
+    return sb.toString();
+  }
+  @SuppressWarnings({"rawtypes"})
+  private static String jsonStringify(Object v){
+    if (v == null) return "null";
+    if (v instanceof String) return '"' + jsonEscape((String)v) + '"';
+    if (v instanceof Number || v instanceof Boolean) return String.valueOf(v);
+    if (v instanceof java.util.Map){
+      StringBuilder sb = new StringBuilder(); sb.append('{'); boolean first=true;
+      for (Object eObj : ((java.util.Map)v).entrySet()){
+        java.util.Map.Entry e = (java.util.Map.Entry)eObj;
+        if (!first) sb.append(','); first=false;
+        sb.append('"').append(jsonEscape(String.valueOf(e.getKey()))).append('"').append(':');
+        sb.append(jsonStringify(e.getValue()));
+      }
+      sb.append('}'); return sb.toString();
+    }
+    if (v instanceof java.util.List){
+      StringBuilder sb = new StringBuilder(); sb.append('['); boolean first=true;
+      java.util.List list = (java.util.List)v;
+      for (Object it : list){ if (!first) sb.append(','); first=false; sb.append(jsonStringify(it)); }
+      sb.append(']'); return sb.toString();
+    }
+    // fallback
+    return '"' + jsonEscape(String.valueOf(v)) + '"';
+  }
+  public String json_encode(Object v){ return jsonStringify(v); }
+
+  // minimal JSON parser
+  private static class J {
+    private final String s; private int i=0;
+    J(String s){ this.s = s==null?"":s.trim(); }
+    private void ws(){ while(i<s.length() && Character.isWhitespace(s.charAt(i))) i++; }
+    Object parse(){ ws(); Object v = val(); ws(); return v; }
+    private Object val(){ ws(); if (i>=s.length()) return null; char c=s.charAt(i);
+      if (c=='"') return str();
+      if (c=='{') return obj();
+      if (c=='[') return arr();
+      if (s.startsWith("true", i)){ i+=4; return Boolean.TRUE; }
+      if (s.startsWith("false", i)){ i+=5; return Boolean.FALSE; }
+      if (s.startsWith("null", i)){ i+=4; return null; }
+      return num(); }
+    private String str(){ StringBuilder sb=new StringBuilder(); i++; while(i<s.length()){ char c=s.charAt(i++); if(c=='"') break; if(c=='\\' && i<s.length()){ char e=s.charAt(i++); switch(e){ case '"': sb.append('"'); break; case '\\': sb.append('\\'); break; case 'n': sb.append('\n'); break; case 'r': sb.append('\r'); break; case 't': sb.append('\t'); break; case 'u': String hex=s.substring(i,i+4); sb.append((char)Integer.parseInt(hex,16)); i+=4; break; default: sb.append(e);} } else { sb.append(c);} } return sb.toString(); }
+    private Number num(){ int st=i; boolean dot=false; while(i<s.length()){ char c=s.charAt(i); if((c>='0'&&c<='9')||c=='-'||c=='+'||c=='e'||c=='E'){ if(c=='.') dot=true; i++; } else break; } String n=s.substring(st,i); try{ if(dot) return Double.valueOf(n); else return Integer.valueOf(n); }catch(Exception ex){ return Double.valueOf(n); } }
+    private java.util.Map obj(){ java.util.LinkedHashMap m = new java.util.LinkedHashMap(); i++; ws(); if (s.charAt(i)=='}'){ i++; return m; } while(true){ ws(); String k=(String)str(); ws(); if(s.charAt(i++)!=':') throw new RuntimeException("Invalid JSON object"); Object v=val(); m.put(k,v); ws(); char c=s.charAt(i++); if(c=='}') break; if(c!=',') throw new RuntimeException("Invalid JSON object"); }
+      return m; }
+    private java.util.List arr(){ java.util.ArrayList a=new java.util.ArrayList(); i++; ws(); if (s.charAt(i)==']'){ i++; return a; } while(true){ Object v=val(); a.add(v); ws(); char c=s.charAt(i++); if(c==']') break; if(c!=',') throw new RuntimeException("Invalid JSON array"); }
+      return a; }
+  }
+  public Object json_decode(Object s){ return new J(asString(s)).parse(); }
+
+  // YAML (encode always available; decode via SnakeYAML if present)
+  public String yml_encode(Object v){
+    // try SnakeYAML
+    try{
+      Class<?> yamlClz = Class.forName("org.yaml.snakeyaml.Yaml");
+      Object y = yamlClz.getConstructor().newInstance();
+      Method dump = yamlClz.getMethod("dump", Object.class);
+      return (String) dump.invoke(y, v);
+    }catch(Throwable ignore){
+      return simpleYaml(v, 0);
+    }
+  }
+
+  @SuppressWarnings({"rawtypes"})
+  private static String simpleYaml(Object v, int indent){
+    String pad = " ".repeat(indent);
+    if (v == null) return "null\n";
+    if (v instanceof Boolean || v instanceof Number) return pad + String.valueOf(v) + "\n";
+    if (v instanceof String) return pad + '"' + ((String)v).replace("\"","\\\"") + '"' + "\n";
+    if (v instanceof java.util.Map){ StringBuilder sb=new StringBuilder(); java.util.Map m=(java.util.Map)v; for(Object k : m.keySet()){ sb.append(pad).append(String.valueOf(k)).append(": "); Object val=m.get(k); if (val instanceof java.util.Map || val instanceof java.util.List){ sb.append("\n").append(simpleYaml(val, indent+2)); } else { sb.append(simpleYaml(val, 0)); } } return sb.toString(); }
+    if (v instanceof java.util.List){ StringBuilder sb=new StringBuilder(); java.util.List a=(java.util.List)v; for(Object it : a){ sb.append(pad).append("- "); if (it instanceof java.util.Map || it instanceof java.util.List){ sb.append("\n").append(simpleYaml(it, indent+2)); } else { sb.append(simpleYaml(it,0)); } } return sb.toString(); }
+    return pad + '"' + String.valueOf(v).replace("\"","\\\"") + '"' + "\n";
+  }
+
+  public Object yml_decode(Object s){
+    try{
+      Class<?> yamlClz = Class.forName("org.yaml.snakeyaml.Yaml");
+      Object y = yamlClz.getConstructor().newInstance();
+      Method load = yamlClz.getMethod("load", String.class);
+      return load.invoke(y, asString(s));
+    }catch(Throwable ex){
+      throw new RuntimeException("YAML decode requires SnakeYAML on classpath");
+    }
+  }
+
+  // delegates
+  public Object delegate(Object name){ return new com.dafei1288.jimlang.Delegate(asString(name)); }
+  public Object partial(Object del, Object arg){
+    if (del instanceof com.dafei1288.jimlang.Delegate){
+      return ((com.dafei1288.jimlang.Delegate)del).withBound(arg);
+    }
+    // treat name as function name
+    return new com.dafei1288.jimlang.Delegate(asString(del)).withBound(arg);
+  }private static boolean hasMethod(String name){
     if (name == null) return false;
     for (Method m : new Funcall().getClass().getMethods()){
       if (m.getName().equalsIgnoreCase(name)) return true;
