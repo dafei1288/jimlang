@@ -68,3 +68,18 @@ public void demoJsr223() throws ScriptException {
 - 快速参考：`doc/QUICKREF.md`
 - 路线图与当前状态：`doc/ROADMAP.md`
 - 编码/换行规范：参见根目录 `agent.md`（操作指引）与 `doc/ROADMAP.md` 中的“编码/换行规范（摘要）”章节
+
+## JSON/YAML
+```jim
+var o = { a: 1, b: [2,3] }
+var j = json_encode(o)
+var x = json_decode(j)
+println( json_pretty(o, 2) )
+
+// 文件读写
+json_dump(o, "tmp.json", 2)
+var ox = json_load("tmp.json")
+
+yml_dump(o, "tmp.yml", 2)
+// var oy = yml_load("tmp.yml")  // 需要 SnakeYAML
+```

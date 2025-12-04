@@ -96,3 +96,18 @@ See also:
   - `examples/scope_func.jim` – function-local shadowing
   - `examples/scope_if.jim` – block scope shadowing
   - `examples/scope_assign_outer.jim` – assign to outer var inside function
+## JSON/YAML helpers
+
+```jim
+var o = { a: 1, b: [2,3] }
+var j = json_encode(o)
+var x = json_decode(j)
+println(json_pretty(o, 2))
+
+// file IO
+json_dump(o, "tmp.json", 2)
+var ox = json_load("tmp.json")
+
+yml_dump(o, "tmp.yml", 2)
+// var oy = yml_load("tmp.yml")  // requires SnakeYAML
+```
