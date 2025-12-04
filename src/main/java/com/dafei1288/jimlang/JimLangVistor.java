@@ -54,6 +54,12 @@ if (st != null && !st.isEmpty()) {
 }
 return new RuntimeException(sb.toString());
     }Hashtable<String, Symbol> _sympoltable = new Hashtable<>();
+    private final java.util.ArrayDeque<java.util.Hashtable<String, Symbol>> scopeStack = new java.util.ArrayDeque<>();
+    private final java.util.Hashtable<String, Symbol> globals = _sympoltable;
+    private java.util.Hashtable<String, Symbol> current(){ return scopeStack.isEmpty()? globals : scopeStack.peek(); }
+    private Symbol findSymbol(String name){ if(!scopeStack.isEmpty()){ for (java.util.Hashtable<String, Symbol> m : scopeStack){ Symbol s=m.get(name); if(s!=null) return s; } } return globals.get(name); }
+    private void pushScope(){ scopeStack.push(new java.util.Hashtable<>()); }
+    private void popScope(){ if(!scopeStack.isEmpty()) scopeStack.pop(); }
     Scope currentScope;
 
     // loop control flow exceptions
@@ -77,13 +83,13 @@ return new RuntimeException(sb.toString());
     @Override
     public Object visitVariableDecl(VariableDeclContext ctx) {
         String varName = ctx.identifier().getText();
-        SymbolVar symbol = (SymbolVar) _sympoltable.get(varName);
+        SymbolVar symbol = (SymbolVar) current().get(varName);
         if(symbol == null){
             symbol = new SymbolVar();
             symbol.setName(varName);
             symbol.setParseTree(ctx);
             if(ctx.typeAnnotation()!=null && ctx.typeAnnotation().typeName()!=null){ String tn = ctx.typeAnnotation().typeName().getText(); symbol.setTypeName(tn); try{ ((com.dafei1288.jimlang.metadata.SymbolVar)symbol).setExpectedType(com.dafei1288.jimlang.metadata.TypeDescriptor.parse(tn)); } catch(Exception ex){ throw error("Unknown type: "+tn, ctx); } }
-            _sympoltable.put(varName,symbol);
+            current().put(varName,symbol);
         }
         for(AssignmentContext assignmentContext : ctx.assignment()){
             if(assignmentContext.expression() != null ){
@@ -99,7 +105,7 @@ return new RuntimeException(sb.toString());
         Object newValue = this.visit(ctx.expression());
         JimLangParser.LvalueContext lvc = ctx.lvalue();
         String baseName = lvc.identifier().getText();
-        Symbol baseSymbol = _sympoltable.get(baseName);
+        Symbol baseSymbol = findSymbol(baseName);
         if (baseSymbol == null) {
             throw error("Variable '" + baseName + "' is not defined", ctx);
         }
@@ -293,17 +299,22 @@ return new RuntimeException(sb.toString());
 
     @Override
     public Object visitBlock(JimLangParser.BlockContext ctx) {
-        if (ctx.statementList() != null) {
-            return this.visit(ctx.statementList());
+        pushScope();
+        try {
+            if (ctx.statementList() != null) {
+                return this.visit(ctx.statementList());
+            }
+            return null;
+        } finally {
+            popScope();
         }
-        return null;
     }
 
     
     @Override
     public Object visitFunctionDecl(FunctionDeclContext ctx) {
         String functionName = ctx.identifier().getText();
-        if(_sympoltable.get(functionName) == null){
+        if(globals.get(functionName) == null){
             SymbolFunction symbol = new SymbolFunction();
             symbol.setName(functionName);
             symbol.setParseTree(ctx);
@@ -319,7 +330,7 @@ return new RuntimeException(sb.toString());
             if(ctx.functionBody() != null){
                 symbol.setFunctionBody(ctx.functionBody().getText());
             }
-            _sympoltable.put(functionName,symbol);
+            globals.put(functionName,symbol);
         }
         return null;
     }private Object executeBinaryOperation(Object left, Object right, String op, org.antlr.v4.runtime.ParserRuleContext ctx) {
@@ -406,11 +417,11 @@ return new RuntimeException(sb.toString());
     }
 
     // user-defined function
-    SymbolFunction currentSymbol = (SymbolFunction) _sympoltable.get(functionName);
+    SymbolFunction currentSymbol = (SymbolFunction) globals.get(functionName);
     if (currentSymbol != null) {
         com.dafei1288.jimlang.Trace.push(functionName + "()");
         com.dafei1288.jimlang.Trace.log("enter " + functionName);
-        java.util.Hashtable<String, Symbol> savedSymbolTable = new java.util.Hashtable<>(_sympoltable);
+        pushScope();
         try {
             java.util.List<String> formalParams = currentSymbol.getParameterList();
             if (formalParams != null) {
@@ -421,7 +432,7 @@ return new RuntimeException(sb.toString());
                     SymbolVar paramVar = new SymbolVar();
                     paramVar.setName(formalParams.get(i));
                     paramVar.setValue(actuals.get(i));
-                    _sympoltable.put(formalParams.get(i), paramVar);
+                    current().put(formalParams.get(i), paramVar);
                 }
             }
             Object result = null;
@@ -435,8 +446,7 @@ return new RuntimeException(sb.toString());
                 }
             }
             return result;
-        } finally {
-            _sympoltable = savedSymbolTable;
+        } finally { popScope();
             com.dafei1288.jimlang.Trace.log("leave " + functionName);
             com.dafei1288.jimlang.Trace.pop();
         }
@@ -482,7 +492,7 @@ return new RuntimeException(sb.toString());
     public Object visitAtom(JimLangParser.AtomContext ctx) {
         if (ctx.identifier() != null) {
             String name = ctx.identifier().getText();
-            Symbol sym = _sympoltable.get(name);
+            Symbol sym = findSymbol(name);
             if (sym == null) throw error("Variable '" + name + "' is not defined", ctx);
             return sym.getValue();
         }
