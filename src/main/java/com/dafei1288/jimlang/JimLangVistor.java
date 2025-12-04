@@ -404,7 +404,76 @@ return new RuntimeException(sb.toString());
         }
     }
 
-    // built-in function
+    // special: apply(delegateOrName, ...args)
+    if ("apply".equals(functionName)) {
+        java.util.List<Object> args = actuals;
+        if (args == null || args.isEmpty()) throw error("apply requires at least 1 argument", ctx);
+        Object target = args.get(0);
+        java.util.List<Object> rest = args.subList(1, args.size());
+        String targetName;
+        java.util.ArrayList<Object> callArgs = new java.util.ArrayList<>();
+        if (target instanceof com.dafei1288.jimlang.Delegate) {
+            com.dafei1288.jimlang.Delegate d = (com.dafei1288.jimlang.Delegate) target;
+            targetName = d.getName();
+            java.util.List<Object> b = d.getBound(); if (b != null) callArgs.addAll(b);
+        } else {
+            targetName = String.valueOf(target);
+        }
+        callArgs.addAll(rest);
+        if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(targetName)) {
+            com.dafei1288.jimlang.Trace.push(targetName+"() via apply");
+            try { return com.dafei1288.jimlang.sys.Funcall.exec(targetName, callArgs); }
+            finally { com.dafei1288.jimlang.Trace.pop(); }
+        }
+        SymbolFunction currentSymbol2 = (SymbolFunction) globals.get(targetName);
+        if (currentSymbol2 == null) throw error("Unknown function: "+targetName, ctx);
+        com.dafei1288.jimlang.Trace.push(targetName+"() via apply");
+        com.dafei1288.jimlang.Trace.log("enter "+targetName);
+        pushScope();
+        try {
+            java.util.List<String> formalParams = currentSymbol2.getParameterList();
+            if (formalParams != null) {
+                if (formalParams.size() != callArgs.size()) {
+                    throw error("Function "+targetName+" expects "+formalParams.size()+" arguments but got "+callArgs.size(), ctx);
+                }
+                for (int i = 0; i < formalParams.size(); i++) {
+                    SymbolVar paramVar = new SymbolVar();
+                    paramVar.setName(formalParams.get(i));
+                    paramVar.setValue(callArgs.get(i));
+                    current().put(formalParams.get(i), paramVar);
+                }
+            }
+            Object result = null;
+            FunctionDeclContext funcDecl = (FunctionDeclContext) currentSymbol2.getParseTree();
+            if (funcDecl != null && funcDecl.functionBody() != null) {
+                if (funcDecl.functionBody().statementList() != null) {
+                    this.visit(funcDecl.functionBody().statementList());
+                }
+                if (funcDecl.functionBody().returnStatement() != null) {
+                    result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
+                }
+            }
+            return result;
+        } finally {
+            popScope();
+            com.dafei1288.jimlang.Trace.log("leave "+targetName);
+            com.dafei1288.jimlang.Trace.pop();
+        }
+    }
+    // normalize delegate/partial first argument when user passes bare identifier (e.g., delegate(add))
+    if (("delegate".equals(functionName) || "partial".equals(functionName)) && actuals != null && !actuals.isEmpty()) {
+        if (actuals.get(0) == null && ctx.parameterList() != null && ctx.parameterList().singleExpression() != null && !ctx.parameterList().singleExpression().isEmpty()) {
+            // recover raw text of the first argument
+            String raw = ctx.parameterList().singleExpression(0).getText();
+            if (raw != null) {
+                // strip surrounding quotes if any
+                if (raw.length() >= 2 && raw.charAt(0) == '"' && raw.charAt(raw.length()-1) == '"') {
+                    raw = raw.substring(1, raw.length()-1);
+                }
+                actuals.set(0, raw);
+            }
+        }
+    }    // built-in function
     if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(functionName)) {
         com.dafei1288.jimlang.Trace.push(functionName + "()");
         com.dafei1288.jimlang.Trace.log("enter " + functionName);
