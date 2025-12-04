@@ -220,4 +220,10 @@ public interface JimLangVisitor<T> extends ParseTreeVisitor<T> {
 	 * @return the visitor result
 	 */
 	T visitTypeName(JimLangParser.TypeNameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link JimLangParser#qualifiedName}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitQualifiedName(JimLangParser.QualifiedNameContext ctx);
 }
