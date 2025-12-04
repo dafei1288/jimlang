@@ -1,54 +1,70 @@
-# What is JimLang
+# JimLang 是什么
 
-JimLang是基于JVM的具有完善语言系统的编程语言，其主旨是帮助大家入门语言开发领域。
+JimLang 是一个基于 JVM 的脚本/编程语言，语法简洁，便于嵌入到 Java 应用中。它的目标是：
+- 让初学者快速进入“语言开发/实现”的世界；
+- 提供可用的 CLI/REPL 和标准库；
+- 在较小的实现规模下，展现解析、语义、执行、错误处理等完整链路。
 
-# 如何使用
+## 环境要求
+- Java >= 21
+- Maven >= 3.8
 
-```
-    @Test
-    public void T3() throws IOException{
-
-        String script = """
-                function two() { return 2 } ;
-                print( two() ) ;
-                """;
-
-        System.out.println(script);
-        System.out.println("--------------------");
-        JimLangShell shell = new JimLangShell();
-        Object ret = shell.eval(script,null);
-    }
+## 从源码构建
+```bash
+mvn -q -DskipTests package
 ```
 
-或者使用 jsr-233 方式
+## CLI 快速上手
+- 运行脚本：`bin\\jimlang.cmd examples\\fibonacci.jim`
+- 启动 REPL：`bin\\jimlang.cmd --cli`（或 `-i`）
+- 执行单行：`bin\\jimlang.cmd --eval "println(1+2)"`（或 `-e`）
+- 从 STDIN 读取：`echo println(42) | bin\\jimlang.cmd -`
+- 启用调用跟踪：`bin\\jimlang.cmd --trace examples\\fibonacci.jim`（或设置环境变量 `JIM_TRACE=1`）
 
-    @Test
-    public void test01() throws ScriptException {
-        String script = """
-                function two() { return 2 } ;
-                print( two() ) ;
-                """;
+更多命令与示例见：`doc/QUICKREF.md`
 
-        System.out.println(script);
-        System.out.println("--------------------");
+## 在 Java 中嵌入执行（JimLangShell）
+```java
+@Test
+public void demo() throws IOException {
+    String script = """
+            function two() { return 2 ; }
+            function one() { return 1 ; }
+            var x = one() + two() ;
+            println("this message is from jimlang!!!")
+            println(x)
+            """;
+    JimLangShell shell = new JimLangShell();
+    Object ret = shell.eval(script, null);
+}
+```
 
-        ScriptEngineManager manager = new ScriptEngineManager();
-        ScriptEngine engine = manager.getEngineByName("jim");
-        engine.eval(script);
-    }
+## 使用 JSR-223（可选）
+```java
+@Test
+public void demoJsr223() throws ScriptException {
+    String script = """
+            function two() { return 2 ; }
+            function one() { return 1 ; }
+            var x = one() + two() ;
+            println("this message is from jimlang!!!")
+            println(x)
+            """;
+    ScriptEngineManager manager = new ScriptEngineManager();
+    ScriptEngine engine = manager.getEngineByName("jim");
+    engine.eval(script);
+}
+```
 
+## 示例（Examples）
+- `examples/fibonacci.jim`：斐波那契数列
+- `examples/stdlib_phase3.jim`：标准库展示
+- 作用域示例：
+  - `examples/scope_func.jim`：函数内遮蔽
+  - `examples/scope_if.jim`：独立块遮蔽
+  - `examples/scope_assign_outer.jim`：在函数内部修改外部变量
 
-
-# 参与开发
-
-## 系统要求
-1. Java >= 21
-2. Maven >= 3.8 (If you want to compile and install IoTDB from source code).
-
-## 代码编译
-
-`mvn clean package -DskipTest=true`
-
-
-# Roadmap
-
+## 文档
+- 快速参考：`doc/QUICKREF.md`
+- 路线图与当前状态：`doc/ROADMAP.md`
+- 编码/换行规范：参见根目录 `agent.md`（操作指引）与 `doc/ROADMAP.md` 中的“编码/换行规范（摘要）”章节
