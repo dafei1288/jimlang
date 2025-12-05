@@ -32,7 +32,7 @@ import java.util.Hashtable;
 public class JimLangVistor extends JimLangBaseVisitor {    private String sourceName = "<script>";
     private String[] sourceLines = new String[0];
     public void setSourceName(String s){ this.sourceName = (s==null?"<script>":s); }
-    public void setSourceText(String txt){ this.sourceLines = (txt==null)? new String[0] : txt.split("\r?\n", -1); }
+    public void setSourceText(String txt){ this.sourceLines = (txt==null)? new String[0] : txt.split("\r?", -1); }
     private RuntimeException error(String msg, org.antlr.v4.runtime.ParserRuleContext ctx){
         int line=1,col=1;
         if (ctx!=null && ctx.getStart()!=null){ line = ctx.getStart().getLine(); col = ctx.getStart().getCharPositionInLine()+1; }
@@ -176,6 +176,18 @@ return new RuntimeException(sb.toString());
             int ops = ctx.binOP() == null ? 0 : ctx.binOP().size();
             for (int i = 0; i < ops; i++) {
                 String op = ctx.binOP(i).getText().trim();
+                if ("&&".equals(op)) {
+                    if (!truthy(value)) { value = false; continue; }
+                    Object right = this.visitPrimary(primaries.get(i + 1));
+                    value = truthy(right);
+                    continue;
+                }
+                if ("||".equals(op)) {
+                    if (truthy(value)) { value = true; continue; }
+                    Object right = this.visitPrimary(primaries.get(i + 1));
+                    value = truthy(right);
+                    continue;
+                }
                 Object right = this.visitPrimary(primaries.get(i + 1));
                 value = executeBinaryOperation(value, right, op, ctx);
             }
@@ -552,5 +564,12 @@ return new RuntimeException(sb.toString());
         }
     }    public Object callFromHost(Object target, java.util.List<Object> args){
         return invokeCallable(target, args, null);
+    
     }
-}
+    private static boolean truthy(Object v){
+        if (v == null) return false;
+        if (v instanceof Boolean) return (Boolean)v;
+        if (v instanceof Number) return ((Number)v).doubleValue() != 0.0;
+        if (v instanceof String) return !((String)v).isEmpty();
+        return true;
+    }}

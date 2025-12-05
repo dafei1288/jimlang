@@ -61,7 +61,7 @@ pair: identifier COLON expression ;
 
 constVar : NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL ;
 
-binOP : ADD | SUB | MUL | DIV | GT | GE | LT | LE | EQ | NE ;
+binOP : ADD | SUB | MUL | DIV | GT | GE | LT | LE | EQ | NE | AND | OR ;
 
 parameterList: singleExpression (',' singleExpression)*;
 identifier: ID;
