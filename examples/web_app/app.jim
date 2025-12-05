@@ -1,4 +1,4 @@
-﻿// JimLang Web App example
+// JimLang Web App example
 function home(req){
   var html = "<h1>JimLang Web App</h1>"
     + "<ul>"
@@ -28,6 +28,11 @@ function login(req){ return set_cookie(redirect("/me"), "sid", "abc123", { httpO
 function me(req){
   var sid = req.cookies.sid
   if (sid == null) { sid = get_cookie(req, "sid") }
+  var resp
+  if (sid == null) { resp = send_text("not logged in", 401) } else { resp = send_json({ sid: sid }) }
+  return resp
+}
+
   if (sid == null) { return send_text("not logged in", 401) }
   return send_json({ sid: sid })
 }
