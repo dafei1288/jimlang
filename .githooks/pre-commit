@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Pre-commit: verify UTF-8 (no BOM). Prefer PowerShell on Windows, else Python/bash.
+if command -v powershell >/dev/null 2>&1; then
+  powershell -NoProfile -ExecutionPolicy Bypass -File "tools/verify-encoding.ps1"
+elif command -v pwsh >/dev/null 2>&1; then
+  pwsh -NoProfile -ExecutionPolicy Bypass -File "tools/verify-encoding.ps1"
+elif [ -x "tools/verify-encoding.sh" ]; then
+  bash "tools/verify-encoding.sh"
+else
+  echo "warn: verify-encoding not available; skipping" >&2
+fi
