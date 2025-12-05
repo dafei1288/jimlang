@@ -1,0 +1,12 @@
+// Simple web server demo
+function api(req){ return "aa" }
+function bar(req){ return { msg: "ccc" } }
+
+// Either pack routes with route(...)
+// start_webserver(8080, [ route("/v1/foo","GET", api), route("/v1/bar","POST", bar) ])
+
+// Or use the simplified overload with triples (path, method, handler)
+start_webserver(8080, 
+  "/v1/foo", "GET", api,
+  "/v1/bar", "POST", bar
+)
