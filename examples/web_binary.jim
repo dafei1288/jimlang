@@ -1,0 +1,13 @@
+// Binary download demo
+function dl(req){
+  // Send this source file as attachment
+  return attachment_file("examples/web_helpers.jim", "helpers.jim", "text/plain; charset=utf-8")
+}
+function img(req){
+  // Send any file inline
+  return send_file("pom.xml", "text/xml; charset=utf-8")
+}
+start_webserver(8085,
+  "/dl",  "GET", dl,
+  "/xml", "GET", img
+)

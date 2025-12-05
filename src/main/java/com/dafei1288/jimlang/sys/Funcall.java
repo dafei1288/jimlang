@@ -68,6 +68,10 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("SEND_TEXT");
     SYS_FUNCTION_NAMES.add("SEND_HTML");
     SYS_FUNCTION_NAMES.add("ATTACHMENT");
+    SYS_FUNCTION_NAMES.add("SEND_FILE");
+    SYS_FUNCTION_NAMES.add("ATTACHMENT_FILE");
+    SYS_FUNCTION_NAMES.add("RESPONSE_BYTES");
+    SYS_FUNCTION_NAMES.add("FILE_READ_BYTES");
     SYS_FUNCTION_NAMES.add("SET_COOKIE");
     SYS_FUNCTION_NAMES.add("GET_COOKIE");
     SYS_FUNCTION_NAMES.add("CLEAR_COOKIE");
@@ -155,6 +159,24 @@ public class Funcall {
     return Double.parseDouble(s);
   }
   private static boolean hasDot(String s){ return s != null && s.indexOf('.') >= 0; }
+  private static byte[] asBytes(Object o){
+    if (o == null) return new byte[0];
+    if (o instanceof byte[]) return (byte[]) o;
+    if (o instanceof String) return ((String)o).getBytes(StandardCharsets.UTF_8);
+    if (o instanceof java.util.List){
+      java.util.List list = (java.util.List) o;
+      byte[] b = new byte[list.size()];
+      for (int i=0;i<list.size();i++){
+        Object v = list.get(i);
+        int n;
+        if (v instanceof Number) n = ((Number)v).intValue(); else n = Integer.parseInt(String.valueOf(v));
+        if (n < 0) n = 0; if (n > 255) n = 255;
+        b[i] = (byte)(n & 0xFF);
+      }
+      return b;
+    }
+    throw new RuntimeException("Not bytes: " + o.getClass().getSimpleName());
+  }
 
   // ------------- built-ins: print -------------
   public void println(Object obj){ System.out.println(obj); }
@@ -511,8 +533,31 @@ public class Funcall {
     if (contentType != null) hdr.put("Content-Type", contentType);
     return new Resp(st, hdr, bytes);
   }
+  public Object file_read_bytes(Object path){
+    try{
+      return Files.readAllBytes(Paths.get(asString(path)));
+    }catch(IOException e){ throw new RuntimeException(e); }
+  }
   public Object response(Object status, Object body){
     return response(status, null, body);
+  }
+  public Object response_bytes(Object status, Object headers, Object bytesObj){
+    int st = asInt(status);
+    java.util.Map<String,String> hdr = new java.util.LinkedHashMap<>();
+    if (headers instanceof java.util.Map){
+      java.util.Map hm = (java.util.Map)headers;
+      for (Object k : hm.keySet()){
+        hdr.put(String.valueOf(k), (hm.get(k)==null?null:String.valueOf(hm.get(k))));
+      }
+    }
+    if (!hdr.containsKey("Content-Type") && !hdr.containsKey("content-type")){
+      hdr.put("Content-Type", "application/octet-stream");
+    }
+    byte[] bytes = asBytes(bytesObj);
+    return new Resp(st, hdr, bytes);
+  }
+  public Object response_bytes(Object status, Object bytesObj){
+    return response_bytes(status, null, bytesObj);
   }
   public Object req_json(Object req){
     if (!(req instanceof java.util.Map)) return null;
@@ -537,6 +582,36 @@ public class Funcall {
     h.put("Content-Type", mt);
     h.put("Content-Disposition", "attachment; filename=\"" + fn.replace("\"","%22") + "\"");
     return response(status, h, content);
+  }
+  public Object send_file(Object path){ return send_file(path, null, 200); }
+  public Object send_file(Object path, Object mime){ return send_file(path, mime, 200); }
+  public Object send_file(Object path, Object mime, Object status){
+    try{
+      Path p = Paths.get(asString(path));
+      byte[] b = Files.readAllBytes(p);
+      String mt = (mime==null||String.valueOf(mime).isEmpty()) ? null : String.valueOf(mime);
+      if (mt == null) { try { mt = Files.probeContentType(p); } catch(Exception ignore) {} }
+      if (mt == null) mt = "application/octet-stream";
+      java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+      h.put("Content-Type", mt);
+      return new Resp(asInt(status), h, b);
+    }catch(IOException e){ throw new RuntimeException(e); }
+  }
+  public Object attachment_file(Object path, Object filename){ return attachment_file(path, filename, null, 200); }
+  public Object attachment_file(Object path, Object filename, Object mime){ return attachment_file(path, filename, mime, 200); }
+  public Object attachment_file(Object path, Object filename, Object mime, Object status){
+    try{
+      Path p = Paths.get(asString(path));
+      byte[] b = Files.readAllBytes(p);
+      String mt = (mime==null||String.valueOf(mime).isEmpty()) ? null : String.valueOf(mime);
+      if (mt == null) { try { mt = Files.probeContentType(p); } catch(Exception ignore) {} }
+      if (mt == null) mt = "application/octet-stream";
+      String fn = String.valueOf(filename);
+      java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+      h.put("Content-Type", mt);
+      h.put("Content-Disposition", "attachment; filename=\"" + fn.replace("\"","%22") + "\"");
+      return new Resp(asInt(status), h, b);
+    }catch(IOException e){ throw new RuntimeException(e); }
   }
 
   // cookies
