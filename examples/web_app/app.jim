@@ -31,12 +31,7 @@ function me(req){
   var resp
   if (sid == null) { resp = send_text("not logged in", 401) } else { resp = send_json({ sid: sid }) }
   return resp
-}
-
-  if (sid == null) { return send_text("not logged in", 401) }
-  return send_json({ sid: sid })
-}
-start_webserver(8088,
+}start_webserver(8088,
   "/", "GET", home,
   "/api/ping", "GET", ping,
   "/api/echo", "POST", echo,
