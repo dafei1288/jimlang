@@ -18,7 +18,7 @@ function echo(req){ var data = req.json; if (data == null) { data = req_json(req
 function user(req){ return send_json({ id: req.params.id }) }
 function static_serve(req){
   var rel = req.params.splat
-  if (rel == null) { rel = "index.html" }
+  if (rel == null || rel == "") { rel = "index.html" }
   var file = "examples/web_app/static/" + rel
   return send_file(file)
 }
