@@ -1115,7 +1115,7 @@ public class JimLangParser extends Parser {
 			setState(178);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 1090384822272L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 4388919705600L) != 0)) {
 				{
 				{
 				setState(173);
@@ -2056,6 +2056,8 @@ public class JimLangParser extends Parser {
 		public TerminalNode LE() { return getToken(JimLangParser.LE, 0); }
 		public TerminalNode EQ() { return getToken(JimLangParser.EQ, 0); }
 		public TerminalNode NE() { return getToken(JimLangParser.NE, 0); }
+		public TerminalNode AND() { return getToken(JimLangParser.AND, 0); }
+		public TerminalNode OR() { return getToken(JimLangParser.OR, 0); }
 		public BinOPContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -2076,7 +2078,7 @@ public class JimLangParser extends Parser {
 			{
 			setState(291);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 1090384822272L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 4388919705600L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -2441,7 +2443,7 @@ public class JimLangParser extends Parser {
 		"$\u0001$\u0001$\u0005$\u013f\b$\n$\f$\u0142\t$\u0001$\u0000\u0000%\u0000"+
 		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c"+
 		"\u001e \"$&(*,.02468:<>@BDFH\u0000\u0003\u0001\u0000\u0014\u0016\u0002"+
-		"\u0000\u001d \"\'\u0001\u0000\u0001\u0002\u0154\u0000K\u0001\u0000\u0000"+
+		"\u0000\u001d \")\u0001\u0000\u0001\u0002\u0154\u0000K\u0001\u0000\u0000"+
 		"\u0000\u0002[\u0001\u0000\u0000\u0000\u0004^\u0001\u0000\u0000\u0000\u0006"+
 		"c\u0001\u0000\u0000\u0000\bi\u0001\u0000\u0000\u0000\np\u0001\u0000\u0000"+
 		"\u0000\fu\u0001\u0000\u0000\u0000\u000e~\u0001\u0000\u0000\u0000\u0010"+

@@ -31,7 +31,8 @@ function me(req){
   var resp
   if (len(sid) == 0) { resp = send_text("not logged in", 401) } else { resp = send_json({ sid: sid }) }
   return resp
-}start_webserver(8088,
+}
+start_webserver(8088,
   "/", "GET", home,
   "/api/ping", "GET", ping,
   "/api/echo", "POST", echo,
