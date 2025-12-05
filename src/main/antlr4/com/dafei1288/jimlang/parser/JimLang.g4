@@ -2,7 +2,7 @@ grammar JimLang;
 
 prog:  statementList? EOF;
 
-statementList : (  variableDecl | functionDecl | functionCall | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement | breakStatement | continueStatement  | block )* ;
+statementList : (  variableDecl | functionDecl | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement | breakStatement | continueStatement  | block )* ;
 
 assignment: '=' expression ';'? ;
 
@@ -44,12 +44,14 @@ expressionStatement: expression ';'? ;
 // primary with chained accessors
 primary: atom (accessor | callSuffix)* ;
 atom: functionCall
+    | sysfunction
     | identifier
     | constVar
     | arrayLiteral
     | objectLiteral
     | '(' expression ')'
-    ;accessor: '[' expression ']' | '.' identifier ;
+    ;
+accessor: '[' expression ']' | '.' identifier ;
 
 callSuffix: '(' parameterList? ')';
 

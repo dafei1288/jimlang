@@ -1,0 +1,13 @@
+// First-class functions demo
+function add(a,b){ return a + b }
+function mul(a,b){ return a * b }
+
+var d = add
+println( d(2, 3) )       // 5
+
+var inc = partial(add, 1)
+println( inc(41) )       // 42
+
+var ops = [ add, mul ]
+println( ops[0](10, 5) ) // 15
+println( ops[1](6, 7) )  // 42

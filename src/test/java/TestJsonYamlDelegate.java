@@ -67,7 +67,7 @@ public class TestJsonYamlDelegate {
         String script = String.join("\n",
                 "function add(a,b){ return a + b }",
                 "var d = delegate(\"add\")",
-                "println( apply(d, 2, 3) )"
+                "println( d(2, 3) )"
         );
         String out = runAndCapture(script);
         assertEquals("5", out.trim());
@@ -79,7 +79,7 @@ public class TestJsonYamlDelegate {
                 "function add(a,b){ return a + b }",
                 "var d = delegate(\"add\")",
                 "var inc = partial(d, 1)",
-                "println( apply(inc, 41) )"
+                "println( inc(41) )"
         );
         String out = runAndCapture(script);
         assertEquals("42", out.trim());
