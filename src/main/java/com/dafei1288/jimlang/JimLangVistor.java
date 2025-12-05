@@ -452,7 +452,9 @@ return new RuntimeException(sb.toString());
     }
 
     public Object visitAtom(JimLangParser.AtomContext ctx) {
-        if (ctx.identifier() != null) {
+        if (ctx.sysfunction() != null) {
+            return new com.dafei1288.jimlang.Delegate(ctx.sysfunction().getText());
+        }        if (ctx.identifier() != null) {
             String name = ctx.identifier().getText();
             Symbol sym = findSymbol(name);
             if (sym == null) {
