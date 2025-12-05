@@ -485,6 +485,18 @@ public class Funcall {
       return true;
     }catch(Exception e){ throw new RuntimeException(e); }
   }
+  public Boolean start_webserver(Object port, Object path1, Object method1, Object handler1){
+    java.util.ArrayList<java.util.Map<String,Object>> list = new java.util.ArrayList<>();
+    list.add((java.util.Map<String,Object>)route(path1, method1, handler1));
+    return start_webserver(port, list);
+  }
+  public Boolean start_webserver(Object port, Object path1, Object method1, Object handler1,
+                                 Object path2, Object method2, Object handler2){
+    java.util.ArrayList<java.util.Map<String,Object>> list = new java.util.ArrayList<>();
+    list.add((java.util.Map<String,Object>)route(path1, method1, handler1));
+    list.add((java.util.Map<String,Object>)route(path2, method2, handler2));
+    return start_webserver(port, list);
+  }
   @SuppressWarnings({"rawtypes"})
   private static String jsonStringify(Object v){
     if (v == null) return "null";
