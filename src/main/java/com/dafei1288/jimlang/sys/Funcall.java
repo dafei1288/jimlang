@@ -65,6 +65,9 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("ROUTE");
     SYS_FUNCTION_NAMES.add("RESPONSE");
     SYS_FUNCTION_NAMES.add("REQ_JSON");
+    SYS_FUNCTION_NAMES.add("REDIRECT");
+    SYS_FUNCTION_NAMES.add("SEND_JSON");
+    SYS_FUNCTION_NAMES.add("SET_HEADER");
   }
 
   public static boolean isSysFunction(String functionName){
@@ -508,6 +511,40 @@ public class Funcall {
     Object body = ((java.util.Map)req).get("body");
     if (body == null) return null;
     return json_decode(String.valueOf(body));
+  }
+  public Object redirect(Object location){
+    java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+    h.put("Location", asString(location));
+    return response(302, h, "");
+  }
+  public Object redirect(Object status, Object location){
+    java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+    h.put("Location", asString(location));
+    return response(status, h, "");
+  }
+  public Object send_json(Object body){
+    java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+    h.put("Content-Type", "application/json; charset=utf-8");
+    return response(200, h, body);
+  }
+  public Object send_json(Object body, Object status){
+    java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+    h.put("Content-Type", "application/json; charset=utf-8");
+    return response(status, h, body);
+  }
+  public Object set_header(Object respOrBody, Object name, Object value){
+    String n = asString(name);
+    String v = asString(value);
+    if (respOrBody instanceof Resp){
+      Resp r = (Resp)respOrBody;
+      java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+      if (r.headers != null) h.putAll(r.headers);
+      h.put(n, v);
+      return new Resp(r.status, h, r.body);
+    }
+    java.util.Map<String,String> h2 = new java.util.LinkedHashMap<>();
+    h2.put(n, v);
+    return response(200, h2, respOrBody);
   }
   @SuppressWarnings({"rawtypes"})
   public Boolean start_webserver(Object port, Object routes){

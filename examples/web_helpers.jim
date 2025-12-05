@@ -1,0 +1,14 @@
+// Web convenience helpers demo
+function ping(req){ return "pong" }
+function created(req){
+  var data = req.json
+  if (data == null) { data = { msg: "no json" } }
+  return send_json({ ok: true, data: data }, 201)
+}
+function go(req){ return redirect("/api/ping") }
+
+start_webserver(8083,
+  "/api/ping",    "GET",  ping,
+  "/api/create",  "POST", created,
+  "/api/go",      "GET",  go
+)
