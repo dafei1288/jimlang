@@ -135,3 +135,4 @@ start_webserver(8080, "/api/ping", "GET", api)
 - Files: `send_file`, `attachment_file`; bytes: `file_read_bytes`
 
 See more: `doc/QUICKREF.md` (Web section)
+- examples/web_app – complete web app (routes, static, cookies, download)
