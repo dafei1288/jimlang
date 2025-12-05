@@ -43,8 +43,7 @@ expressionStatement: expression ';'? ;
 
 // primary with chained accessors
 primary: atom (accessor | callSuffix)* ;
-atom: functionCall
-    | sysfunction
+atom: sysfunction
     | identifier
     | constVar
     | arrayLiteral

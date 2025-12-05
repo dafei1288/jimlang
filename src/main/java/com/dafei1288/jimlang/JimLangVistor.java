@@ -466,7 +466,7 @@ return new RuntimeException(sb.toString());
             if (sym instanceof SymbolFunction) { return new com.dafei1288.jimlang.Delegate(name); } return sym.getValue();
         }
         if (ctx.constVar() != null) return this.visitConstVar(ctx.constVar());
-        if (ctx.functionCall() != null) return this.visitFunctionCall(ctx.functionCall());
+        
         if (ctx.arrayLiteral() != null) return this.visitArrayLiteral(ctx.arrayLiteral());
         if (ctx.objectLiteral() != null) return this.visitObjectLiteral(ctx.objectLiteral());
         if (ctx.expression() != null) return this.visit(ctx.expression());

@@ -167,6 +167,12 @@ public interface JimLangVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitAccessor(JimLangParser.AccessorContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link JimLangParser#callSuffix}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCallSuffix(JimLangParser.CallSuffixContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link JimLangParser#arrayLiteral}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
