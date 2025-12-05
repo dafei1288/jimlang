@@ -14,11 +14,11 @@ function home(req){
   return send_html(html);
 }
 function ping(req){ return send_text("pong") }
-function echo(req){ var data = req.json; if (data == null) { data = req_json(req) } return send_json({ ok: true, data: data }) }
+function echo(req){ var data = req.json; if (typeof(data) == "null") { data = req_json(req) } return send_json({ ok: true, data: data }) }
 function user(req){ return send_json({ id: req.params.id }) }
 function static_serve(req){
   var rel = req.params.splat
-  if (rel == null || rel == "") { rel = "index.html" }
+  if (rel == "") { rel = "index.html" }
   var file = "examples/web_app/static/" + rel
   return send_file(file)
 }
@@ -27,9 +27,9 @@ function download(req){ return attachment_file("examples/web_app/static/hello.tx
 function login(req){ return set_cookie(redirect("/me"), "sid", "abc123", { httpOnly: true, sameSite: "Lax", path: "/" }) }
 function me(req){
   var sid = req.cookies.sid
-  if (sid == null) { sid = get_cookie(req, "sid") }
+  if (len(sid) == 0) { sid = get_cookie(req, "sid") }
   var resp
-  if (sid == null) { resp = send_text("not logged in", 401) } else { resp = send_json({ sid: sid }) }
+  if (len(sid) == 0) { resp = send_text("not logged in", 401) } else { resp = send_json({ sid: sid }) }
   return resp
 }start_webserver(8088,
   "/", "GET", home,
