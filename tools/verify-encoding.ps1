@@ -13,12 +13,11 @@ $enc = New-Object System.Text.UTF8Encoding($false, $true) # no BOM, throw on inv
 $includeExt = @(
   '.java','.md','.g4','.sh','.ps1','.yml','.yaml','.json','.cmd','.bat','.txt','.xml','.properties'
 )
-$excludeDirs = @('\.git\','\btarget\b','\b\.idea\b','\b\.vscode\b')
 
-$files = Get-ChildItem -Recurse -File | Where-Object {
-  $p = $_.FullName
-  -not ($excludeDirs | Where-Object { $p -match $_ }) -and ($includeExt -contains ([IO.Path]::GetExtension($p).ToLowerInvariant()))
-}
+$allFiles = Get-ChildItem -Recurse -File
+# Filter out excluded directories
+$files = $allFiles | Where-Object { $p = $_.FullName; -not ($p -match '[\\/](?:target|\.git|\.idea|\.vscode)[\\/]') } |
+  Where-Object { $includeExt -contains ([IO.Path]::GetExtension($_.FullName).ToLowerInvariant()) }
 
 $errors = 0
 $warns = 0
@@ -44,8 +43,8 @@ foreach($f in $files){
     [void]$enc.GetString($bytes)
 
     # EOL checks (warnings by default)
-    $ext = [IO.Path]::GetExtension($f.Name).ToLowerInvariant()
     if ($StrictEol) {
+      $ext = [IO.Path]::GetExtension($f.Name).ToLowerInvariant()
       $content = [System.Text.Encoding]::UTF8.GetString($bytes)
       if ($ext -ne '.cmd' -and $ext -ne '.bat'){
         if ($content -match "\r\n"){
