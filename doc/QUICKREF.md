@@ -129,3 +129,15 @@ println( apply(inc, 41) )        // 42
 ```
 
 详见: `examples/lib_functional.jim`
+## 第一类函数（First-class functions）
+```jim
+function add(a,b){ return a + b }
+var d = add
+println( d(2, 3) )        // 5
+
+var inc = partial(add, 1)
+println( inc(41) )        // 42
+
+var ops = [ add ]
+println( ops[0](10, 5) )  // 15
+```

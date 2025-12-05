@@ -83,3 +83,9 @@ var ox = json_load("tmp.json")
 yml_dump(o, "tmp.yml", 2)
 // var oy = yml_load("tmp.yml")  // 需要 SnakeYAML
 ```
+## 第一类函数
+```jim
+function add(a,b){ return a + b }
+var d = add
+println( d(2, 3) )
+```

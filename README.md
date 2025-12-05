@@ -111,3 +111,9 @@ var ox = json_load("tmp.json")
 yml_dump(o, "tmp.yml", 2)
 // var oy = yml_load("tmp.yml")  // requires SnakeYAML
 ```
+## First-class functions
+```jim
+function add(a,b){ return a + b }
+var d = add
+println( d(2, 3) )
+```
