@@ -60,6 +60,9 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("FILE_WRITE");
         SYS_FUNCTION_NAMES.add("FILE_EXISTS");
     SYS_FUNCTION_NAMES.add("FILE_APPEND");
+    // web
+    SYS_FUNCTION_NAMES.add("START_WEBSERVER");
+    SYS_FUNCTION_NAMES.add("ROUTE");
   }
 
   public static boolean isSysFunction(String functionName){
@@ -365,6 +368,122 @@ public class Funcall {
       }
     }
     return sb.toString();
+  }
+
+  // ---------------- web server (simple) ----------------
+  private static class Route {
+    final String method;
+    final Object handler; // Delegate or function name
+    final com.dafei1288.jimlang.JimLangVistor visitor;
+    Route(String m, Object h, com.dafei1288.jimlang.JimLangVistor v){ this.method=m; this.handler=h; this.visitor=v; }
+  }
+  private static final java.util.Map<Integer, com.sun.net.httpserver.HttpServer> SERVERS = new java.util.concurrent.ConcurrentHashMap<>();
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object route(Object path, Object method, Object handler){
+    java.util.LinkedHashMap m = new java.util.LinkedHashMap();
+    m.put("path", asString(path));
+    m.put("method", asString(method));
+    m.put("handler", handler);
+    return m;
+  }
+  @SuppressWarnings({"rawtypes"})
+  public Boolean start_webserver(Object port, Object routes){
+    int p = asInt(port);
+    if (SERVERS.containsKey(p)) return true;
+    com.dafei1288.jimlang.JimLangVistor v = com.dafei1288.jimlang.Host.current();
+    if (v == null) throw new RuntimeException("start_webserver must be called from script context");
+    try{
+      java.net.InetSocketAddress addr = new java.net.InetSocketAddress(p);
+      com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(addr, 0);
+      java.util.Map<String, java.util.List<Route>> table = new java.util.HashMap<>();
+      java.util.List list;
+      if (routes instanceof java.util.List){ list = (java.util.List)routes; }
+      else if (routes instanceof java.util.Map){ list = java.util.Arrays.asList(routes); }
+      else { throw new RuntimeException("routes must be array of route(...) or object"); }
+      for (Object it : list){
+        if (!(it instanceof java.util.Map)) throw new RuntimeException("route entry must be object from route(path,method,handler)");
+        java.util.Map r = (java.util.Map) it;
+        String pathStr = asString(r.get("path"));
+        String m = asString(r.get("method")); if (m==null) m="GET"; m = m.toUpperCase(java.util.Locale.ROOT);
+        Object h = r.get("handler");
+        table.computeIfAbsent(pathStr, k -> new java.util.ArrayList<>()).add(new Route(m, h, v));
+      }
+      for (java.util.Map.Entry<String, java.util.List<Route>> e : table.entrySet()){
+        String pathStr = e.getKey();
+        java.util.List<Route> routesForPath = e.getValue();
+        server.createContext(pathStr, exchange -> {
+          try {
+            String method = exchange.getRequestMethod();
+            if (method == null) method = "GET"; method = method.toUpperCase(java.util.Locale.ROOT);
+            Route hit = null;
+            for (Route r : routesForPath) { if (r.method.equals(method)) { hit = r; break; } }
+            if (hit == null){
+              byte[] b = ("Method Not Allowed").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+              exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+              exchange.sendResponseHeaders(405, b.length);
+              try(java.io.OutputStream os = exchange.getResponseBody()){ os.write(b); }
+              return;
+            }
+            // Build request map
+            java.util.LinkedHashMap<String,Object> req = new java.util.LinkedHashMap<>();
+            java.net.URI uri = exchange.getRequestURI();
+            req.put("method", method);
+            req.put("path", uri.getPath());
+            // query params
+            java.util.LinkedHashMap<String,Object> q = new java.util.LinkedHashMap<>();
+            String qq = uri.getRawQuery();
+            if (qq != null && !qq.isEmpty()){
+              for (String pair : qq.split("&")){
+                int i = pair.indexOf('=');
+                if (i>=0) q.put(java.net.URLDecoder.decode(pair.substring(0,i), "UTF-8"), java.net.URLDecoder.decode(pair.substring(i+1), "UTF-8"));
+                else q.put(java.net.URLDecoder.decode(pair, "UTF-8"), "");
+              }
+            }
+            req.put("query", q);
+            // headers
+            java.util.LinkedHashMap<String,Object> hs = new java.util.LinkedHashMap<>();
+            for (java.util.Map.Entry<String, java.util.List<String>> he : exchange.getRequestHeaders().entrySet()){
+              hs.put(he.getKey(), he.getValue()==null?null:String.join(",", he.getValue()));
+            }
+            req.put("headers", hs);
+            // body
+            byte[] bodyBytes = new byte[0];
+            try(java.io.InputStream is = exchange.getRequestBody()){
+              bodyBytes = is.readAllBytes();
+            }
+            String body = new String(bodyBytes, java.nio.charset.StandardCharsets.UTF_8);
+            req.put("body", body);
+
+            Object result;
+            synchronized (hit.visitor){
+              java.util.ArrayList<Object> args = new java.util.ArrayList<>();
+              args.add(req);
+              result = hit.visitor.callFromHost(hit.handler, args);
+            }
+            byte[] out;
+            String contentType = "text/plain; charset=utf-8";
+            if (result == null){ out = new byte[0]; }
+            else if (result instanceof String){ out = ((String)result).getBytes(java.nio.charset.StandardCharsets.UTF_8); }
+            else if (result instanceof java.util.Map || result instanceof java.util.List){ out = jsonStringify(result).getBytes(java.nio.charset.StandardCharsets.UTF_8); contentType = "application/json; charset=utf-8"; }
+            else { out = String.valueOf(result).getBytes(java.nio.charset.StandardCharsets.UTF_8); }
+            exchange.getResponseHeaders().set("Content-Type", contentType);
+            exchange.sendResponseHeaders(200, out.length);
+            try(java.io.OutputStream os = exchange.getResponseBody()){ os.write(out); }
+          } catch (Exception ex){
+            byte[] b = ("Internal Server Error: " + ex.getMessage()).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+            exchange.sendResponseHeaders(500, b.length);
+            try(java.io.OutputStream os = exchange.getResponseBody()){ os.write(b); }
+          } finally {
+            exchange.close();
+          }
+        });
+      }
+      server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
+      server.start();
+      SERVERS.put(p, server);
+      return true;
+    }catch(Exception e){ throw new RuntimeException(e); }
   }
   @SuppressWarnings({"rawtypes"})
   private static String jsonStringify(Object v){

@@ -399,8 +399,7 @@ return new RuntimeException(sb.toString());
         if (functionName != null && com.dafei1288.jimlang.sys.Funcall.isSysFunction(functionName)) {
             com.dafei1288.jimlang.Trace.push(functionName + "()");
             com.dafei1288.jimlang.Trace.log("enter " + functionName);
-            try { return com.dafei1288.jimlang.sys.Funcall.exec(functionName, actuals); }
-            finally { com.dafei1288.jimlang.Trace.log("leave " + functionName); com.dafei1288.jimlang.Trace.pop(); }
+            try { com.dafei1288.jimlang.Host.set(this); return com.dafei1288.jimlang.sys.Funcall.exec(functionName, actuals); } finally { com.dafei1288.jimlang.Host.clear();  com.dafei1288.jimlang.Trace.log("leave " + functionName); com.dafei1288.jimlang.Trace.pop(); }
         }
         return super.visitFunctionCall(ctx);
     }
@@ -515,8 +514,7 @@ return new RuntimeException(sb.toString());
         callArgs.addAll(args);
         if (com.dafei1288.jimlang.sys.Funcall.isSysFunction(targetName)) {
             com.dafei1288.jimlang.Trace.push(targetName + "() via call");
-            try { return com.dafei1288.jimlang.sys.Funcall.exec(targetName, callArgs); }
-            finally { com.dafei1288.jimlang.Trace.pop(); }
+            try { com.dafei1288.jimlang.Host.set(this); return com.dafei1288.jimlang.sys.Funcall.exec(targetName, callArgs); } finally { com.dafei1288.jimlang.Host.clear();  com.dafei1288.jimlang.Trace.pop(); }
         }
         SymbolFunction f = (SymbolFunction) globals.get(targetName);
         if (f == null) throw error("Unknown function: " + targetName, ctx);
@@ -552,4 +550,7 @@ return new RuntimeException(sb.toString());
             com.dafei1288.jimlang.Trace.log("leave " + targetName);
             com.dafei1288.jimlang.Trace.pop();
         }
-    }}
+    }    public Object callFromHost(Object target, java.util.List<Object> args){
+        return invokeCallable(target, args, null);
+    }
+}
