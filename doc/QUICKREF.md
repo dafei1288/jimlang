@@ -147,3 +147,46 @@ p("ok")                    // 系统函数作为值
 var ops = [ add ]
 println( ops[0](10, 5) )  // 15
 ```
+## 内置 Web 服务
+```jim
+function api(req){ return { ok: true } }
+start_webserver(8080,
+  "/v1/foo", "GET", api,
+  "/v1/bar", "POST", api
+)
+```
+- 路由：两种写法均可
+  - 三元组：`start_webserver(port, "path","METHOD", handler, ...)`（不限条数）
+  - 构造器：`start_webserver(port, [ route(path, method, handler), ... ])`
+- handler 签名：`function h(req){ ... }`，`req` 含以下字段：
+  - `method`, `path`, `params`（路径参数，如 `:id`），`splat`（通配余项 `*`）
+  - `query`（查询参数 map），`headers`（请求头 map），`body`（原文），`json`（自动解析），`cookies`（解析后的 cookie map）
+- 返回值（响应）：
+  - `string` → `text/plain`；`map/array` → `application/json`
+  - `response(status, headers, body)`：完全自定义
+  - 便捷函数：
+    - 文本/HTML/JSON：`send_text(body[, status])`、`send_html(html[, status])`、`send_json(obj[, status])`
+    - 重定向：`redirect(location)` 或 `redirect(status, location)`
+    - 头部：`set_header(respOrBody, name, value)`（可链式）
+    - 二进制：`response_bytes(status[, headers], bytes)`
+- 文件/下载：
+  - `send_file(path[, mime][, status])`
+  - `attachment_file(path, filename[, mime][, status])`
+  - 低阶：`file_read_bytes(path)` 返回字节数组
+- Cookie：
+  - `set_cookie(respOrBody, name, value[, opts])`
+  - `get_cookie(req, name)`、`clear_cookie(respOrBody, name)`
+  - `opts` 支持：`path`、`domain`、`httpOnly`、`secure`、`maxAge`、`expires`、`sameSite`
+- 路径匹配：
+  - `:param` → `req.params.param`；`/*` → `req.params.splat`
+  - 方法匹配：`GET/POST/...` 或 `ANY/*`
+
+示例：参数与通配
+```jim
+function show(req){ return { id: req.params.id } }
+function file(req){ return { rest: req.params.splat } }
+start_webserver(8082,
+  "/users/:id", "GET", show,
+  "/static/*",  "GET", file
+)
+```

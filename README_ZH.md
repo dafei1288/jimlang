@@ -93,3 +93,14 @@ println( d(2, 3) )
 var p = println
 p("ok")
 ```
+## 内置 Web 服务
+```jim
+function api(req){ return { ok: true } }
+start_webserver(8080, "/api/ping", "GET", api)
+```
+- 路由：三元组 `(path, method, handler)` 或 `route(...)` 数组
+- 请求：`req` 包含 method/path/params/splat/query/headers/body/json/cookies
+- 响应：`send_text/send_html/send_json/redirect/set_header/response/response_bytes`
+- 文件与下载：`send_file/attachment_file`；字节：`file_read_bytes`
+
+详见：`doc/QUICKREF.md`（Web）

@@ -123,3 +123,15 @@ function add(a,b){ return a + b }
 var d = add
 println( d(2, 3) )
 ```
+
+## Web Server (built-in)
+```jim
+function api(req){ return { ok: true } }
+start_webserver(8080, "/api/ping", "GET", api)
+```
+- Routes: use triples `(path, method, handler)` or `route(path, method, handler)` array
+- Handler receives `req`: method, path, params/splat, query, headers, body, json, cookies
+- Response helpers: `send_text`, `send_html`, `send_json`, `redirect`, `set_header`, `response`, `response_bytes`
+- Files: `send_file`, `attachment_file`; bytes: `file_read_bytes`
+
+See more: `doc/QUICKREF.md` (Web section)
