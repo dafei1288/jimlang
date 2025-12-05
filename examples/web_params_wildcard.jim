@@ -1,0 +1,14 @@
+// Route parameters and wildcard demo
+function show_user(req){
+  // /users/:id  => req.params.id
+  println( json_pretty({ path: req.path, id: req.params.id }, 0) )
+  return { id: req.params.id }
+}
+function static_file(req){
+  // /static/*  => req.params.splat is the remainder path
+  return { file: req.params.splat }
+}
+start_webserver(8082,
+  "/users/:id", "GET", show_user,
+  "/static/*",  "GET", static_file
+)

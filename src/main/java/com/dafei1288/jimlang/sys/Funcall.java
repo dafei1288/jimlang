@@ -379,11 +379,58 @@ public class Funcall {
     final byte[] body;
     Resp(int s, java.util.Map<String,String> h, byte[] b){ this.status=s; this.headers=h; this.body=b; }
   }
+  // path pattern compiler: supports literals, :param, and trailing * wildcard (prefix)
+  private static class PathPattern {
+    final String raw;
+    final String[] tokens; // without leading empty segment
+    PathPattern(String raw){
+      if (raw == null || raw.isEmpty()) raw = "/";
+      this.raw = raw;
+      String norm = raw.startsWith("/") ? raw.substring(1) : raw;
+      if (norm.isEmpty()) { this.tokens = new String[0]; }
+      else this.tokens = norm.split("/");
+    }
+    // Returns null if not match; otherwise returns params map. Supports trailing '*' -> captures remainder under key "splat".
+    java.util.Map<String,String> match(String path){
+      if (path == null) path = "/";
+      String norm = path.startsWith("/") ? path.substring(1) : path;
+      String[] parts = norm.isEmpty()? new String[0] : norm.split("/");
+      java.util.LinkedHashMap<String,String> params = new java.util.LinkedHashMap<>();
+      int i=0, j=0;
+      while(i < tokens.length && j < parts.length){
+        String t = tokens[i];
+        if ("*".equals(t)){
+          // wildcard consumes remainder
+          StringBuilder sb = new StringBuilder();
+          for (int k=j;k<parts.length;k++){ if (k>j) sb.append('/'); sb.append(parts[k]); }
+          params.put("splat", sb.toString());
+          return params;
+        }
+        if (t.startsWith(":")){
+          String name = t.substring(1);
+          params.put(name, parts[j]);
+        } else {
+          if (!t.equals(parts[j])) return null;
+        }
+        i++; j++;
+      }
+      // if pattern has remaining tokens
+      if (i < tokens.length){
+        if (i == tokens.length-1 && "*".equals(tokens[i])){ params.put("splat", ""); return params; }
+        return null;
+      }
+      // pattern consumed; path must also be fully consumed
+      if (j < parts.length) return null;
+      return params;
+    }
+  }
   private static class Route {
-    final String method;
+    final String method; // upper-case, or "ANY"/"*"
+    final String path;
+    final PathPattern pattern;
     final Object handler; // Delegate or function name
     final com.dafei1288.jimlang.JimLangVistor visitor;
-    Route(String m, Object h, com.dafei1288.jimlang.JimLangVistor v){ this.method=m; this.handler=h; this.visitor=v; }
+    Route(String m, String p, Object h, com.dafei1288.jimlang.JimLangVistor v){ this.method=m; this.path=p; this.pattern=new PathPattern(p); this.handler=h; this.visitor=v; }
   }
   private static final java.util.Map<Integer, com.sun.net.httpserver.HttpServer> SERVERS = new java.util.concurrent.ConcurrentHashMap<>();
   @SuppressWarnings({"rawtypes","unchecked"})
@@ -439,7 +486,7 @@ public class Funcall {
     try{
       java.net.InetSocketAddress addr = new java.net.InetSocketAddress(p);
       com.sun.net.httpserver.HttpServer server = com.sun.net.httpserver.HttpServer.create(addr, 0);
-      java.util.Map<String, java.util.List<Route>> table = new java.util.HashMap<>();
+      java.util.ArrayList<Route> routeList = new java.util.ArrayList<>();
       java.util.List list;
       if (routes instanceof java.util.List){ list = (java.util.List)routes; }
       else if (routes instanceof java.util.Map){ list = java.util.Arrays.asList(routes); }
@@ -448,23 +495,30 @@ public class Funcall {
         if (!(it instanceof java.util.Map)) throw new RuntimeException("route entry must be object from route(path,method,handler)");
         java.util.Map r = (java.util.Map) it;
         String pathStr = asString(r.get("path"));
-        String m = asString(r.get("method")); if (m==null) m="GET"; m = m.toUpperCase(java.util.Locale.ROOT);
+        String m = asString(r.get("method")); if (m==null || m.isEmpty()) m="GET"; m = m.toUpperCase(java.util.Locale.ROOT);
         Object h = r.get("handler");
-        table.computeIfAbsent(pathStr, k -> new java.util.ArrayList<>()).add(new Route(m, h, v));
+        routeList.add(new Route(m, pathStr, h, v));
       }
-      for (java.util.Map.Entry<String, java.util.List<Route>> e : table.entrySet()){
-        String pathStr = e.getKey();
-        java.util.List<Route> routesForPath = e.getValue();
-        server.createContext(pathStr, exchange -> {
+      // single dispatch context for all paths; match in order
+      server.createContext("/", exchange -> {
           try {
             String method = exchange.getRequestMethod();
             if (method == null) method = "GET"; method = method.toUpperCase(java.util.Locale.ROOT);
-            Route hit = null;
-            for (Route r : routesForPath) { if (r.method.equals(method)) { hit = r; break; } }
+            String reqPath = exchange.getRequestURI().getPath();
+            Route hit = null; java.util.Map<String,String> pathParams = null; boolean pathOnlyMatched = false;
+            for (Route r : routeList) {
+              java.util.Map<String,String> m = r.pattern.match(reqPath);
+              if (m != null) {
+                if ("*".equals(r.method) || "ANY".equals(r.method) || r.method.equals(method)) { hit = r; pathParams = m; break; }
+                pathOnlyMatched = true; // path ok but method mismatch
+              }
+            }
             if (hit == null){
-              byte[] b = ("Method Not Allowed").getBytes(java.nio.charset.StandardCharsets.UTF_8);
+              int code = pathOnlyMatched ? 405 : 404;
+              String msg = pathOnlyMatched ? "Method Not Allowed" : "Not Found";
+              byte[] b = (msg).getBytes(java.nio.charset.StandardCharsets.UTF_8);
               exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
-              exchange.sendResponseHeaders(405, b.length);
+              exchange.sendResponseHeaders(code, b.length);
               try(java.io.OutputStream os = exchange.getResponseBody()){ os.write(b); }
               return;
             }
@@ -473,6 +527,7 @@ public class Funcall {
             java.net.URI uri = exchange.getRequestURI();
             req.put("method", method);
             req.put("path", uri.getPath());
+            if (pathParams != null) req.put("params", pathParams);
             // query params
             java.util.LinkedHashMap<String,Object> q = new java.util.LinkedHashMap<>();
             String qq = uri.getRawQuery();
@@ -543,7 +598,7 @@ public class Funcall {
             exchange.close();
           }
         });
-      }
+      
       server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
       server.start();
       SERVERS.put(p, server);
