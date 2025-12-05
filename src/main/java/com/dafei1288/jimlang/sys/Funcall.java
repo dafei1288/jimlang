@@ -65,6 +65,12 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("ROUTE");
     SYS_FUNCTION_NAMES.add("RESPONSE");
     SYS_FUNCTION_NAMES.add("REQ_JSON");
+    SYS_FUNCTION_NAMES.add("SEND_TEXT");
+    SYS_FUNCTION_NAMES.add("SEND_HTML");
+    SYS_FUNCTION_NAMES.add("ATTACHMENT");
+    SYS_FUNCTION_NAMES.add("SET_COOKIE");
+    SYS_FUNCTION_NAMES.add("GET_COOKIE");
+    SYS_FUNCTION_NAMES.add("CLEAR_COOKIE");
     SYS_FUNCTION_NAMES.add("REDIRECT");
     SYS_FUNCTION_NAMES.add("SEND_JSON");
     SYS_FUNCTION_NAMES.add("SET_HEADER");
@@ -411,8 +417,10 @@ public class Funcall {
   private static class Resp {
     final int status;
     final java.util.Map<String,String> headers;
+    final java.util.List<String> setCookies; // multiple Set-Cookie headers
     final byte[] body;
-    Resp(int s, java.util.Map<String,String> h, byte[] b){ this.status=s; this.headers=h; this.body=b; }
+    Resp(int s, java.util.Map<String,String> h, byte[] b){ this(s,h,b,null); }
+    Resp(int s, java.util.Map<String,String> h, byte[] b, java.util.List<String> cookies){ this.status=s; this.headers=h; this.body=b; this.setCookies=cookies; }
   }
   // path pattern compiler: supports literals, :param, and trailing * wildcard (prefix)
   private static class PathPattern {
@@ -511,6 +519,90 @@ public class Funcall {
     Object body = ((java.util.Map)req).get("body");
     if (body == null) return null;
     return json_decode(String.valueOf(body));
+  }
+  // text/html helpers
+  public Object send_text(Object body){ return response(200, new java.util.LinkedHashMap<String,String>(){{ put("Content-Type","text/plain; charset=utf-8"); }}, body); }
+  public Object send_text(Object body, Object status){ return response(status, new java.util.LinkedHashMap<String,String>(){{ put("Content-Type","text/plain; charset=utf-8"); }}, body); }
+  public Object send_text(Object body, Object status, Object contentType){ return response(status, new java.util.LinkedHashMap<String,String>(){{ put("Content-Type", String.valueOf(contentType)); }}, body); }
+  public Object send_html(Object html){ return response(200, new java.util.LinkedHashMap<String,String>(){{ put("Content-Type","text/html; charset=utf-8"); }}, html); }
+  public Object send_html(Object html, Object status){ return response(status, new java.util.LinkedHashMap<String,String>(){{ put("Content-Type","text/html; charset=utf-8"); }}, html); }
+
+  // attachment (download)
+  public Object attachment(Object filename, Object content){ return attachment(filename, content, "application/octet-stream", 200); }
+  public Object attachment(Object filename, Object content, Object mime){ return attachment(filename, content, mime, 200); }
+  public Object attachment(Object filename, Object content, Object mime, Object status){
+    String fn = String.valueOf(filename);
+    String mt = String.valueOf(mime);
+    java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
+    h.put("Content-Type", mt);
+    h.put("Content-Disposition", "attachment; filename=\"" + fn.replace("\"","%22") + "\"");
+    return response(status, h, content);
+  }
+
+  // cookies
+  private static String buildCookie(String name, String value, java.util.Map opts){
+    StringBuilder sb = new StringBuilder();
+    sb.append(name).append("=").append(value==null?"":value);
+    if (opts != null){
+      Object v;
+      v = opts.get("path"); if (v!=null) sb.append("; Path=").append(String.valueOf(v));
+      v = opts.get("domain"); if (v!=null) sb.append("; Domain=").append(String.valueOf(v));
+      Object maxAge = opts.get("maxAge"); if (maxAge!=null) sb.append("; Max-Age=").append(String.valueOf(maxAge));
+      Object expires = opts.get("expires"); if (expires!=null) sb.append("; Expires=").append(String.valueOf(expires));
+      Object sameSite = opts.get("sameSite"); if (sameSite!=null) sb.append("; SameSite=").append(String.valueOf(sameSite));
+      Object httpOnly = opts.get("httpOnly"); if (Boolean.TRUE.equals(httpOnly)) sb.append("; HttpOnly");
+      Object secure = opts.get("secure"); if (Boolean.TRUE.equals(secure)) sb.append("; Secure");
+    }
+    return sb.toString();
+  }
+  @SuppressWarnings({"rawtypes"})
+  public Object set_cookie(Object respOrBody, Object name, Object value){ return set_cookie(respOrBody, name, value, null); }
+  @SuppressWarnings({"rawtypes"})
+  public Object set_cookie(Object respOrBody, Object name, Object value, Object opts){
+    String n = String.valueOf(name);
+    String v = (value==null?"":String.valueOf(value));
+    java.util.Map optMap = (opts instanceof java.util.Map) ? (java.util.Map)opts : null;
+    String cookie = buildCookie(n, v, optMap);
+    if (respOrBody instanceof Resp){
+      Resp r = (Resp)respOrBody;
+      java.util.Map<String,String> h = new java.util.LinkedHashMap<>(); if (r.headers!=null) h.putAll(r.headers);
+      java.util.ArrayList<String> cookies = new java.util.ArrayList<>(); if (r.setCookies!=null) cookies.addAll(r.setCookies);
+      cookies.add(cookie);
+      return new Resp(r.status, h, r.body, cookies);
+    }
+    java.util.ArrayList<String> cookies = new java.util.ArrayList<>(); cookies.add(cookie);
+    return new Resp(200, new java.util.LinkedHashMap<>(), String.valueOf(respOrBody).getBytes(StandardCharsets.UTF_8), cookies);
+  }
+  public Object clear_cookie(Object respOrBody, Object name){
+    java.util.LinkedHashMap<String,Object> opts = new java.util.LinkedHashMap<>();
+    opts.put("maxAge", 0);
+    return set_cookie(respOrBody, name, "", opts);
+  }
+  public Object get_cookie(Object req, Object name){
+    if (!(req instanceof java.util.Map)) return null;
+    Object cookies = ((java.util.Map)req).get("cookies");
+    if (cookies instanceof java.util.Map){
+      return ((java.util.Map)cookies).get(String.valueOf(name));
+    }
+    // fallback parse from headers if available
+    Object headers = ((java.util.Map)req).get("headers");
+    if (headers instanceof java.util.Map){
+      Object ck = ((java.util.Map)headers).get("Cookie");
+      if (ck == null) ck = ((java.util.Map)headers).get("cookie");
+      if (ck != null){
+        java.util.LinkedHashMap<String,String> map = new java.util.LinkedHashMap<>();
+        for (String part : String.valueOf(ck).split(";")) {
+          String piece = part.trim();
+          int eq = piece.indexOf('=');
+          if (eq < 0) continue;
+          String k = piece.substring(0,eq).trim();
+          String val = piece.substring(eq+1).trim();
+          map.put(k, val);
+        }
+        return map.get(String.valueOf(name));
+      }
+    }
+    return null;
   }
   public Object redirect(Object location){
     java.util.Map<String,String> h = new java.util.LinkedHashMap<>();
@@ -614,6 +706,20 @@ public class Funcall {
               hs.put(he.getKey(), he.getValue()==null?null:String.join(",", he.getValue()));
             }
             req.put("headers", hs);
+            // cookies (request): parse Cookie headers into map
+            java.util.LinkedHashMap<String,String> cookieMap = new java.util.LinkedHashMap<>();
+            try {
+              java.util.List<String> cks = exchange.getRequestHeaders().get("Cookie");
+              if (cks != null){
+                for (String line : cks){
+                  if (line == null) continue;
+                  for (String part : line.split(";")){
+                    String piece = part.trim(); int eq = piece.indexOf('='); if (eq<0) continue; String k=piece.substring(0,eq).trim(); String val=piece.substring(eq+1).trim(); cookieMap.put(k, val);
+                  }
+                }
+              }
+            } catch(Exception ignore) {}
+            req.put("cookies", cookieMap);
             // body
             byte[] bodyBytes = new byte[0];
             try(java.io.InputStream is = exchange.getRequestBody()){
@@ -654,7 +760,14 @@ public class Funcall {
               out = String.valueOf(result).getBytes(java.nio.charset.StandardCharsets.UTF_8);
             }
             for (java.util.Map.Entry<String,String> he : outHeaders.entrySet()){
-              if (he.getKey() != null && he.getValue() != null) exchange.getResponseHeaders().set(he.getKey(), he.getValue());
+              if (he.getKey() == null || he.getValue() == null) continue;
+              if ("Set-Cookie".equalsIgnoreCase(he.getKey())) exchange.getResponseHeaders().add("Set-Cookie", he.getValue());
+              else exchange.getResponseHeaders().set(he.getKey(), he.getValue());
+            }
+            // multiple Set-Cookie support
+            if (result instanceof Resp){
+              java.util.List<String> cookies = ((Resp)result).setCookies;
+              if (cookies != null){ for (String c : cookies){ exchange.getResponseHeaders().add("Set-Cookie", c); } }
             }
             exchange.sendResponseHeaders(status, out.length);
             try(java.io.OutputStream os = exchange.getResponseBody()){ os.write(out); }

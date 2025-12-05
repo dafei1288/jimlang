@@ -1,0 +1,17 @@
+// Cookies demo
+function setcookie(req){
+  return set_cookie(send_text("ok"), "sid", "abc123", { httpOnly: true, path: "/" })
+}
+function showcookie(req){
+  var sid = req.cookies.sid
+  if (sid == null) { sid = get_cookie(req, "sid") }
+  return send_text("sid=" + sid)
+}
+function clear(req){
+  return clear_cookie(send_text("bye"), "sid")
+}
+start_webserver(8084,
+  "/set",   "GET", setcookie,
+  "/show",  "GET", showcookie,
+  "/clear", "GET", clear
+)
