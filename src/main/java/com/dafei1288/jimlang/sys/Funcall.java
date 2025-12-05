@@ -63,6 +63,8 @@ public class Funcall {
     // web
     SYS_FUNCTION_NAMES.add("START_WEBSERVER");
     SYS_FUNCTION_NAMES.add("ROUTE");
+    SYS_FUNCTION_NAMES.add("RESPONSE");
+    SYS_FUNCTION_NAMES.add("REQ_JSON");
   }
 
   public static boolean isSysFunction(String functionName){
@@ -371,6 +373,12 @@ public class Funcall {
   }
 
   // ---------------- web server (simple) ----------------
+  private static class Resp {
+    final int status;
+    final java.util.Map<String,String> headers;
+    final byte[] body;
+    Resp(int s, java.util.Map<String,String> h, byte[] b){ this.status=s; this.headers=h; this.body=b; }
+  }
   private static class Route {
     final String method;
     final Object handler; // Delegate or function name
@@ -385,6 +393,42 @@ public class Funcall {
     m.put("method", asString(method));
     m.put("handler", handler);
     return m;
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object response(Object status, Object headers, Object body){
+    int st = asInt(status);
+    java.util.Map<String,String> hdr = new java.util.LinkedHashMap<>();
+    if (headers instanceof java.util.Map){
+      java.util.Map hm = (java.util.Map)headers;
+      for (Object k : hm.keySet()){
+        hdr.put(String.valueOf(k), (hm.get(k)==null?null:String.valueOf(hm.get(k))));
+      }
+    }
+    String contentType = hdr.getOrDefault("Content-Type", hdr.getOrDefault("content-type", null));
+    byte[] bytes;
+    if (body == null) {
+      bytes = new byte[0];
+    } else if (body instanceof String) {
+      bytes = ((String)body).getBytes(StandardCharsets.UTF_8);
+      if (contentType == null) contentType = "text/plain; charset=utf-8";
+    } else if (body instanceof java.util.Map || body instanceof java.util.List) {
+      bytes = jsonStringify(body).getBytes(StandardCharsets.UTF_8);
+      if (contentType == null) contentType = "application/json; charset=utf-8";
+    } else {
+      bytes = String.valueOf(body).getBytes(StandardCharsets.UTF_8);
+      if (contentType == null) contentType = "text/plain; charset=utf-8";
+    }
+    if (contentType != null) hdr.put("Content-Type", contentType);
+    return new Resp(st, hdr, bytes);
+  }
+  public Object response(Object status, Object body){
+    return response(status, null, body);
+  }
+  public Object req_json(Object req){
+    if (!(req instanceof java.util.Map)) return null;
+    Object body = ((java.util.Map)req).get("body");
+    if (body == null) return null;
+    return json_decode(String.valueOf(body));
   }
   @SuppressWarnings({"rawtypes"})
   public Boolean start_webserver(Object port, Object routes){
@@ -453,6 +497,12 @@ public class Funcall {
             }
             String body = new String(bodyBytes, java.nio.charset.StandardCharsets.UTF_8);
             req.put("body", body);
+            // parse json body if content-type indicates json
+            String ct = null;
+            try { ct = exchange.getRequestHeaders().getFirst("Content-Type"); } catch(Exception ignore) {}
+            if (ct != null && ct.toLowerCase(java.util.Locale.ROOT).contains("json")){
+              try { req.put("json", json_decode(body)); } catch(Exception ignore) {}
+            }
 
             Object result;
             synchronized (hit.visitor){
@@ -460,14 +510,29 @@ public class Funcall {
               args.add(req);
               result = hit.visitor.callFromHost(hit.handler, args);
             }
+            int status = 200;
             byte[] out;
-            String contentType = "text/plain; charset=utf-8";
-            if (result == null){ out = new byte[0]; }
-            else if (result instanceof String){ out = ((String)result).getBytes(java.nio.charset.StandardCharsets.UTF_8); }
-            else if (result instanceof java.util.Map || result instanceof java.util.List){ out = jsonStringify(result).getBytes(java.nio.charset.StandardCharsets.UTF_8); contentType = "application/json; charset=utf-8"; }
-            else { out = String.valueOf(result).getBytes(java.nio.charset.StandardCharsets.UTF_8); }
-            exchange.getResponseHeaders().set("Content-Type", contentType);
-            exchange.sendResponseHeaders(200, out.length);
+            java.util.Map<String,String> outHeaders = new java.util.LinkedHashMap<>();
+            outHeaders.put("Content-Type", "text/plain; charset=utf-8");
+            if (result instanceof Resp){
+              Resp r = (Resp) result;
+              status = r.status;
+              out = (r.body == null) ? new byte[0] : r.body;
+              if (r.headers != null) outHeaders.putAll(r.headers);
+            } else if (result == null){
+              out = new byte[0];
+            } else if (result instanceof String){
+              out = ((String)result).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            } else if (result instanceof java.util.Map || result instanceof java.util.List){
+              out = jsonStringify(result).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+              outHeaders.put("Content-Type", "application/json; charset=utf-8");
+            } else {
+              out = String.valueOf(result).getBytes(java.nio.charset.StandardCharsets.UTF_8);
+            }
+            for (java.util.Map.Entry<String,String> he : outHeaders.entrySet()){
+              if (he.getKey() != null && he.getValue() != null) exchange.getResponseHeaders().set(he.getKey(), he.getValue());
+            }
+            exchange.sendResponseHeaders(status, out.length);
             try(java.io.OutputStream os = exchange.getResponseBody()){ os.write(out); }
           } catch (Exception ex){
             byte[] b = ("Internal Server Error: " + ex.getMessage()).getBytes(java.nio.charset.StandardCharsets.UTF_8);

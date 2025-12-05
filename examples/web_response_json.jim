@@ -1,0 +1,14 @@
+// Web server demo with response() and req_json()
+function create(req){
+  var data = req.json   // auto-parsed when Content-Type has json
+  if (data == null) { data = req_json(req) }
+  if (data == null) { data = { msg: "no json" } }
+  var body = { ok: true, data: data }
+  return response(201, { "X-App": "jimlang" }, body)
+}
+function ping(req){ return "pong" }
+
+start_webserver(8081,
+  "/api/ping", "GET", ping,
+  "/api/create", "POST", create
+)
