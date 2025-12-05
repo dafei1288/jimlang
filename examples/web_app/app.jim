@@ -1,0 +1,44 @@
+// JimLang Web App example
+function home(req){
+  var html = "<h1>JimLang Web App</h1>"
+    + "<ul>"
+    + "<li><a href='/api/ping'>GET /api/ping</a></li>"
+    + "<li>POST /api/echo</li>"
+    + "<li><a href='/users/42'>GET /users/:id</a></li>"
+    + "<li><a href='/static/hello.txt'>GET /static/* (serve file)</a></li>"
+    + "<li><a href='/file'>GET /file (single file)</a></li>"
+    + "<li><a href='/download'>GET /download (attachment)</a></li>"
+    + "<li><a href='/login'>GET /login (set cookie)</a></li>"
+    + "<li><a href='/me'>GET /me (read cookie)</a></li>"
+    + "</ul>";
+  return send_html(html);
+}
+function ping(req){ return send_text("pong") }
+function echo(req){ var data = req.json; if (data == null) { data = req_json(req) } return send_json({ ok: true, data: data }) }
+function user(req){ return send_json({ id: req.params.id }) }
+function static_serve(req){
+  var rel = req.params.splat
+  if (rel == null || rel == "") { rel = "index.html" }
+  var file = "examples/web_app/static/" + rel
+  return send_file(file)
+}
+function file(req){ return send_file("examples/web_app/static/hello.txt", "text/plain; charset=utf-8") }
+function download(req){ return attachment_file("examples/web_app/static/hello.txt", "hello.txt", "text/plain; charset=utf-8") }
+function login(req){ return set_cookie(redirect("/me"), "sid", "abc123", { httpOnly: true, sameSite: "Lax", path: "/" }) }
+function me(req){
+  var sid = req.cookies.sid
+  if (sid == null) { sid = get_cookie(req, "sid") }
+  if (sid == null) { return send_text("not logged in", 401) }
+  return send_json({ sid: sid })
+}
+start_webserver(8088,
+  "/", "GET", home,
+  "/api/ping", "GET", ping,
+  "/api/echo", "POST", echo,
+  "/users/:id", "GET", user,
+  "/static/*", "GET", static_serve,
+  "/file", "GET", file,
+  "/download", "GET", download,
+  "/login", "GET", login,
+  "/me", "GET", me
+)
