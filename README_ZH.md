@@ -89,3 +89,7 @@ function add(a,b){ return a + b }
 var d = add
 println( d(2, 3) )
 ```
+```jim
+var p = println
+p("ok")
+```
