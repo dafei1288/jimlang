@@ -50,3 +50,11 @@
   - let/const（块作用域 + const 禁止重赋值）[暂缓]
 
 （本文件编码：UTF-8 无 BOM）
+## TODO（优先级高→低）
+- Web（内置服务器）：
+  - 回归测试集：覆盖 /api/ping、/api/echo、/users/:id、/static/*、下载、Cookie set/show/clear；随机端口；启动/停止生命周期。
+  - 细节增强：静态文件路径规范化（防目录穿越）、缺省 404/405 页面、简易访问日志。
+  - 可配置项：从环境变量/命令行读取端口、主机、日志开关。
+  - API：stop_webserver(port) 关闭指定端口服务。
+- 语法/执行（可选，暂缓）：
+  - 支持块内 return（早返回）：允许在 if/while/for 块中 return；需 grammar 放宽与 ReturnException 机制；配套单测。
