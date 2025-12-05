@@ -86,16 +86,16 @@ or use jsr-233
 - Enable trace: `bin\\jimlang.cmd --trace examples\\fibonacci.jim` (or set `JIM_TRACE=1`)
 
 See also:
-- `doc/QUICKREF.md` – language snippets, stdlib, CLI
-- `doc/ROADMAP.md` – phases, current status, TODO
+- `doc/QUICKREF.md` 鈥?language snippets, stdlib, CLI
+- `doc/ROADMAP.md` 鈥?phases, current status, TODO
 
 ## Examples
-- `examples/fibonacci.jim` – Fibonacci sequence
-- `examples/stdlib_phase3.jim` – stdlib showcase
+- `examples/fibonacci.jim` 鈥?Fibonacci sequence
+- `examples/stdlib_phase3.jim` 鈥?stdlib showcase
 - Scoping demos:
-  - `examples/scope_func.jim` – function-local shadowing
-  - `examples/scope_if.jim` – block scope shadowing
-  - `examples/scope_assign_outer.jim` – assign to outer var inside function
+  - `examples/scope_func.jim` 鈥?function-local shadowing
+  - `examples/scope_if.jim` 鈥?block scope shadowing
+  - `examples/scope_assign_outer.jim` 鈥?assign to outer var inside function
 ## JSON/YAML helpers
 
 ```jim
@@ -112,6 +112,12 @@ yml_dump(o, "tmp.yml", 2)
 // var oy = yml_load("tmp.yml")  // requires SnakeYAML
 ```
 ## First-class functions
+
+> Note: sysfunctions are also first-class values. You can assign and call them:
+```jim
+var p = println
+p("ok")
+```
 ```jim
 function add(a,b){ return a + b }
 var d = add
