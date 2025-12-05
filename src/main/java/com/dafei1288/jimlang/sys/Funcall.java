@@ -76,15 +76,47 @@ public class Funcall {
     Funcall f = new Funcall();
     int argc = (params == null) ? 0 : params.size();
 
-    // pick a method with same name and parameter count
+    // 1) prefer exact match by name (case sensitive) and parameter count
     Method method = Arrays.stream(f.getClass().getMethods())
         .filter(m -> m.getName().equals(functionName) && m.getParameterCount() == argc)
         .findFirst().orElse(null);
 
+    // 2) fallback: case-insensitive exact parameter count
     if(method == null){
       method = Arrays.stream(f.getClass().getMethods())
           .filter(m -> m.getName().equalsIgnoreCase(functionName) && m.getParameterCount() == argc)
           .findFirst().orElse(null);
+    }
+
+    // 3) varargs support: find varargs method and adapt arguments
+    if (method == null) {
+      Method varMethod = Arrays.stream(f.getClass().getMethods())
+          .filter(m -> m.getName().equalsIgnoreCase(functionName) && m.isVarArgs())
+          .findFirst().orElse(null);
+      if (varMethod != null) {
+        try {
+          int pcount = varMethod.getParameterCount();
+          // varargs requires argc >= pcount - 1 (fixed params)
+          int fixed = Math.max(0, pcount - 1);
+          if (argc < fixed) {
+            throw new RuntimeException("Unknown built-in function: " + functionName + " with " + argc + " args");
+          }
+          Class<?>[] pt = varMethod.getParameterTypes();
+          Class<?> varComp = pt[pcount - 1].getComponentType();
+          int varLen = argc - fixed;
+          Object varArray = java.lang.reflect.Array.newInstance(varComp, varLen);
+          for (int i=0;i<varLen;i++) {
+            Object v = params.get(fixed + i);
+            java.lang.reflect.Array.set(varArray, i, v);
+          }
+          Object[] invokeArgs = new Object[pcount];
+          for (int i=0;i<fixed;i++) invokeArgs[i] = params.get(i);
+          invokeArgs[pcount - 1] = varArray;
+          return varMethod.invoke(f, invokeArgs);
+        } catch (IllegalAccessException | InvocationTargetException e) {
+          throw new RuntimeException(e);
+        }
+      }
     }
 
     if(method == null){
@@ -615,6 +647,16 @@ public class Funcall {
     java.util.ArrayList<java.util.Map<String,Object>> list = new java.util.ArrayList<>();
     list.add((java.util.Map<String,Object>)route(path1, method1, handler1));
     list.add((java.util.Map<String,Object>)route(path2, method2, handler2));
+    return start_webserver(port, list);
+  }
+  public Boolean start_webserver(Object port, Object... triples){
+    java.util.ArrayList<java.util.Map<String,Object>> list = new java.util.ArrayList<>();
+    if (triples != null && triples.length > 0){
+      if (triples.length % 3 != 0) throw new RuntimeException("start_webserver expects triples of (path, method, handler)");
+      for (int i=0;i<triples.length;i+=3){
+        list.add((java.util.Map<String,Object>)route(triples[i], triples[i+1], triples[i+2]));
+      }
+    }
     return start_webserver(port, list);
   }
   @SuppressWarnings({"rawtypes"})
