@@ -1236,7 +1236,7 @@ public class Funcall {
                     Object msg = fm.get("message");
                     String chunk = null;
                     if (msg instanceof java.util.Map){ Object content = ((java.util.Map)msg).get("content"); if (content != null) chunk = String.valueOf(content); }
-                    if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); }
+                    if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); } if (chunk == null){ Object msgObj = fm.get("message"); if (msgObj instanceof java.util.Map){ Object c=((java.util.Map)msgObj).get("content"); if (c!=null) chunk = String.valueOf(c); } }
                     if (chunk != null && !chunk.isEmpty()) { System.out.print(chunk); acc2.append(chunk); }
                   }
                 }
