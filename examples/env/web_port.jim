@@ -1,0 +1,6 @@
+// Demo: load .env and start web server on PORT
+load_env("examples/env/.env", true)
+
+function ping(req){ return send_text("pong (" + env_get("GREETING", "") + ")") }
+var port = env_get("PORT", 8088)
+start_webserver(port, "/api/ping", "GET", ping)
