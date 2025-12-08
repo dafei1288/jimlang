@@ -1187,6 +1187,7 @@ public class Funcall {
     String apiKey = String.valueOf(cfg.get("api_key"));
     double temp = parseDouble(cfg.get("temperature"), 0.2);
     boolean stream = parseBool(cfg.get("stream"), false);
+    boolean debug = false; try { debug = parseBool(firstEnv("LLM_DEBUG","DEBUG"), false); } catch(Exception __) {}
     boolean thinking = parseBool(cfg.get("thinking"), false);
     // try LangChain4j (non-stream) if available
     try {
@@ -1243,6 +1244,13 @@ public class Funcall {
       java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
       int sc = resp.statusCode(); String respBody = resp.body();
       String ctype = resp.headers().firstValue("Content-Type").orElse("");
+      if (debug) {
+        System.out.println("[ask_llm] HTTP "+sc+" CT="+ctype);
+        String b = respBody;
+        if (b == null) b = "<null>";
+        int plen = Math.min(b.length(), 800);
+        System.out.println("[body] " + b.substring(0, plen));
+      }
       if ((ctype != null && ctype.contains("event-stream")) || (respBody != null && respBody.startsWith("data:"))) {
         String[] lines = respBody.split("\r?\n");
         StringBuilder acc2 = new StringBuilder();
@@ -1262,10 +1270,11 @@ public class Funcall {
                   Object first = ((java.util.List)choices).get(0);
                   if (first instanceof java.util.Map){
                     java.util.Map fm = (java.util.Map)first;
-                    Object msg = fm.get("message");
-                    String chunk = null;
-                    if (msg instanceof java.util.Map){ Object content = ((java.util.Map)msg).get("content"); if (content != null) chunk = String.valueOf(content); }
-                    if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); } if (chunk == null){ Object msgObj = fm.get("message"); if (msgObj instanceof java.util.Map){ Object c=((java.util.Map)msgObj).get("content"); if (c!=null) chunk = String.valueOf(c); } }
+                                        String chunk = null;
+                    Object delta = fm.get("delta");
+                    if (delta instanceof java.util.Map){ Object c=((java.util.Map)delta).get("content"); if (c!=null) chunk = String.valueOf(c); }
+                    if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); }
+                    if (chunk == null){ Object msg = fm.get("message"); if (msg instanceof java.util.Map){ Object c=((java.util.Map)msg).get("content"); if (c!=null) chunk = String.valueOf(c); } }
                     if (chunk != null && !chunk.isEmpty()) { System.out.print(chunk); acc2.append(chunk); }
                   }
                 }
@@ -1273,7 +1282,9 @@ public class Funcall {
             } catch(Exception ignore){}
           }
         }
+        if (debug) { System.out.println("[SSE-acc] " + acc2.toString()); }
         System.out.println();
+        if (debug) { System.out.println("[SSE-agg] " + acc2.toString()); }
         return acc2.toString();
       }
       if (sc >= 400) throw new RuntimeException("ask_llm HTTP "+sc+": "+respBody);
