@@ -76,17 +76,25 @@ println(b)
 - parseInt(s) / parseFloat(s) -> number
 
 
-## 环境变量（文件）
-- 使用脚本库解析 .env 文件（示例：examples/lib_env.jim）
-`jim
-// in your script
-var ENV = load_env(".env")
-println(ENV.DB_URL)
+## 环境变量
+- 内置：env_get(name[, default]) / env_all() / load_env(path[, override=false])
+- 行为：
+  - env_get 优先读取内存覆盖层（由 load_env(..., true) 注入），否则读取进程环境变量
+  - env_all 返回覆盖层 + 系统环境变量的合并（覆盖层优先）
+  - load_env 解析 .env 文件（支持开头的 export、# 注释、key=value、去首尾引号）；override=true 则写入覆盖层
 
-var cfg = { host: "localhost" }
-load_env_into(".env", cfg)  // 将 .env 合并进已有 map
-`
-注：当前内置函数不直接读取进程环境变量；如需内置 env_get/env_all，请告知，我可以在内核侧补充。## JSON / YAML
+```jim
+// 读取系统环境变量
+println( env_get("PATH", "<none>") )
+
+// 加载 .env 到覆盖层，后续 env_get 优先取这里
+load_env(".env", true)
+println( env_get("DB_URL", "jdbc:sqlite:dev.db") )
+
+// 查看所有环境变量（覆盖层优先）
+var all = env_all()
+println( typeof(all) )   // object
+```## JSON / YAML
 ```jim
 var o = { a: 1, b: [2,3] }
 var j = json_encode(o)

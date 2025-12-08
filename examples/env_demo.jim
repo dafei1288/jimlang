@@ -1,0 +1,9 @@
+// Environment demo using built-ins
+println( typeof(env_get("PATH")) )
+
+// Load .env (if exists) into overlay, so env_get reads it first
+// If .env is missing, this call will throw; wrap in try if needed
+// load_env(".env", true)
+
+var all = env_all()
+println( typeof(all) )
