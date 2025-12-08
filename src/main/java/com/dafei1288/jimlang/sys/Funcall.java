@@ -1123,7 +1123,114 @@ public class Funcall {
     }
     return m;
   }
-private static boolean hasMethod(String name){
+
+  // ------------- built-ins: LLM (OpenAI-compatible) -------------
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private static java.util.Map<String,Object> llmDefaults(){
+    java.util.LinkedHashMap<String,Object> m = new java.util.LinkedHashMap<>();
+    m.put("name", "ds");
+    m.put("model", "deepseek-chat");
+    m.put("base_url", "https://api.deepseek.com");
+    m.put("api_key", "sk-f2892b3c9f0047569dcd2737e1f5c94f");
+    m.put("api_type", "openai");
+    m.put("temperature", 0.2);
+    m.put("stream", Boolean.FALSE);
+    m.put("thinking", Boolean.FALSE);
+    return m;
+  }
+  private static String firstEnv(String... keys){
+    for(String k : keys){ if (ENV_OVERLAY.containsKey(k)) return ENV_OVERLAY.get(k); }
+    for(String k : keys){ String v = System.getenv(k); if (v != null) return v; }
+    return null;
+  }
+  private static boolean parseBool(Object v, boolean def){
+    if (v == null) return def;
+    if (v instanceof Boolean) return ((Boolean)v).booleanValue();
+    String s = String.valueOf(v).trim().toLowerCase(java.util.Locale.ROOT);
+    if (s.isEmpty()) return def;
+    if (s.equals("1")||s.equals("true")||s.equals("yes")||s.equals("y")||s.equals("on")) return true;
+    if (s.equals("0")||s.equals("false")||s.equals("no")||s.equals("n")||s.equals("off")) return false;
+    return def;
+  }
+  private static double parseDouble(Object v, double def){
+    if (v == null) return def; try { return Double.parseDouble(String.valueOf(v)); } catch(Exception ex){ return def; }
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  private static java.util.Map<String,Object> mergeCfg(java.util.Map<String,Object> base, java.util.Map<String,Object> over){
+    if (over == null) return base;
+    for (Object k : over.keySet()) base.put(String.valueOf(k), over.get(k));
+    return base;
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object ask_llm(Object prompt){ return ask_llm(prompt, null); }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object ask_llm(Object prompt, Object overrides){
+    String text = asString(prompt);
+    if (text == null || text.isEmpty()) throw new RuntimeException("ask_llm: empty prompt");
+    java.util.LinkedHashMap<String,Object> cfg = new java.util.LinkedHashMap<>(llmDefaults());
+    // fill from env overlay/system
+    String v;
+    v = firstEnv("LLM_NAME","NAME"); if (v!=null) cfg.put("name", v);
+    v = firstEnv("LLM_MODEL","MODEL"); if (v!=null) cfg.put("model", v);
+    v = firstEnv("LLM_BASE_URL","BASE_URL"); if (v!=null) cfg.put("base_url", v);
+    v = firstEnv("LLM_API_KEY","API_KEY","DEEPSEEK_API_KEY"); if (v!=null) cfg.put("api_key", v);
+    v = firstEnv("LLM_API_TYPE","API_TYPE"); if (v!=null) cfg.put("api_type", v);
+    v = firstEnv("LLM_TEMPERATURE","TEMPERATURE"); if (v!=null) cfg.put("temperature", parseDouble(v, (Double)cfg.get("temperature")));
+    v = firstEnv("LLM_STREAM","STREAM"); if (v!=null) cfg.put("stream", parseBool(v, (Boolean)cfg.get("stream")));
+    v = firstEnv("LLM_THINKING","THINKING"); if (v!=null) cfg.put("thinking", parseBool(v, (Boolean)cfg.get("thinking")));
+    // merge overrides map
+    if (overrides instanceof java.util.Map) { cfg = (java.util.LinkedHashMap<String,Object>) mergeCfg(cfg, (java.util.Map)overrides); }
+    // validate
+    String apiType = String.valueOf(cfg.get("api_type"));
+    String baseUrl = String.valueOf(cfg.get("base_url"));
+    String model = String.valueOf(cfg.get("model"));
+    String apiKey = String.valueOf(cfg.get("api_key"));
+    double temp = parseDouble(cfg.get("temperature"), 0.2);
+    boolean stream = parseBool(cfg.get("stream"), false);
+    boolean thinking = parseBool(cfg.get("thinking"), false);
+    if (apiKey == null || apiKey.isEmpty()) throw new RuntimeException("ask_llm: missing api_key (set LLM_API_KEY or pass overrides)");
+    if (!"openai".equalsIgnoreCase(apiType)) throw new RuntimeException("ask_llm: unsupported api_type: "+apiType+" (only 'openai' compatible supported)");
+    String url = baseUrl;
+    if (!url.endsWith("/")) url += "/";
+    url += "v1/chat/completions";
+    // build body JSON
+    StringBuilder sb = new StringBuilder();
+    sb.append('{');
+    sb.append("\"model\":").append(jsonStringify(model)).append(',');
+    sb.append("\"messages\":[{");
+    sb.append("\"role\":\"user\",\"content\":").append(jsonStringify(text)).append("}]");
+    if (temp != 0.0) { sb.append(',').append("\"temperature\":").append(String.valueOf(temp)); }
+    if (stream) { sb.append(',').append("\"stream\":true"); }
+    if (thinking) { sb.append(',').append("\"thinking\":true"); }
+    sb.append('}');
+    String body = sb.toString();
+    try{
+      java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+      java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
+        .header("Content-Type","application/json")
+        .header("Authorization","Bearer "+apiKey)
+        .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+        .build();
+      java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+      int sc = resp.statusCode(); String respBody = resp.body();
+      if (sc >= 400) throw new RuntimeException("ask_llm HTTP "+sc+": "+respBody);
+      Object parsed = json_decode(respBody);
+      if (parsed instanceof java.util.Map){
+        java.util.Map m = (java.util.Map)parsed;
+        Object choices = m.get("choices");
+        if (choices instanceof java.util.List && !((java.util.List)choices).isEmpty()){
+          Object first = ((java.util.List)choices).get(0);
+          if (first instanceof java.util.Map){
+            java.util.Map fm = (java.util.Map)first;
+            Object msg = fm.get("message");
+            if (msg instanceof java.util.Map){ Object content = ((java.util.Map)msg).get("content"); if (content != null) return String.valueOf(content); }
+            Object text2 = fm.get("text"); if (text2 != null) return String.valueOf(text2);
+          }
+        }
+      }
+      return respBody;
+    }catch(Exception e){ throw new RuntimeException(e); }
+  }private static boolean hasMethod(String name){
     if (name == null) return false;
     for (Method m : new Funcall().getClass().getMethods()){
       if (m.getName().equalsIgnoreCase(name)) return true;
