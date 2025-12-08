@@ -1,0 +1,13 @@
+// LLM streaming demo with on_token callback and no direct printing
+// Requires LLM_API_KEY / DEEPSEEK_API_KEY or load_env(".env", true)
+
+function tok(t){
+  // custom render for each token
+  print("[");
+  print(t);
+  print("]");
+}
+
+var s = ask_llm("用一句话描述春天", { stream: true, stream_print: false, temperature: 0.2, on_token: delegate("tok") })
+println("")
+println("==>" + s)
