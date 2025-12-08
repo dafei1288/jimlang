@@ -25,6 +25,21 @@ var nested = { a: { b: 2 } }
 println(nested.a.b)  // 2
 ```
 
+## 字符串字面量
+- 双引号字符串："..."（单行，不包含换行）
+- 三引号字符串：''' ... '''（多行，原样保留换行和空白）
+- 提示：目前不支持转义序列（如 \n），如需跨行请使用三引号。
+
+```jim
+var a = "Hello";
+var b = '''
+Line 1
+Line 2
+Line 3
+''';
+println(a)
+println(b)
+```
 ## 字符串函数
 - contains(s, sub) -> boolean
 - replace(s, target, repl) -> string
