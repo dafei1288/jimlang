@@ -240,3 +240,17 @@ start_webserver(8082,
 // 使用 overrides map 覆盖
 // println( ask_llm("简述项目特点", { temperature: 0.3, model: "deepseek-chat" }) )
 ```
+## LLM Streaming 说明
+- stream=true 实时输出 token，并在函数返回时提供完整字符串。
+- 关闭直接打印：`{ stream: true, print: false }`（仅返回聚合文本）。
+- 自定义回调：`{ stream: true, on_token: fn }`，每个 token 到达回调一次：`fn(token)`；可与 print:false 搭配。
+- 调试：设置环境变量 `LLM_DEBUG=1` 打印调试信息。
+- 实现：优先使用 LangChain4j OpenAiStreamingChatModel（若存在），否则回退 HTTP SSE。
+
+PowerShell --eval 中文/引号：建议通过 STDIN 传入，避免转义：
+```powershell
+$code = @"
+print(ask_llm("用一句话描述春天", { stream: true, temperature: 0.2 }))
+"@
+$code | bin\jimlang.cmd -
+```
