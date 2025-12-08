@@ -1094,25 +1094,28 @@ public class Funcall {
   @SuppressWarnings({"rawtypes","unchecked"})
   public Object load_env(Object path){ return load_env(path, Boolean.FALSE); }
   @SuppressWarnings({"rawtypes","unchecked"})
-  public Object load_env(Object path, Object override){
+    public Object load_env(Object path, Object override){
     String pth = asString(path);
     java.util.LinkedHashMap m = new java.util.LinkedHashMap();
     try{
-      java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(pth), java.nio.charset.StandardCharsets.UTF_8);
-      for (String rawLine : lines){
-        String line = rawLine.trim();
-        if (line.isEmpty()) continue;
-        if (line.startsWith("#")) continue;
-        if (line.startsWith("export ")) line = line.substring(7).trim();
-        int eq = line.indexOf('=');
-        if (eq <= 0) continue;
-        String key = line.substring(0, eq).trim();
-        String val = line.substring(eq+1).trim();
-        if (val.length() >= 2){
-          char a = val.charAt(0), b = val.charAt(val.length()-1);
-          if ((a=='"' && b=='"') || (a=='\'' && b=='\'')) val = val.substring(1, val.length()-1);
+      java.nio.file.Path file = java.nio.file.Paths.get(pth);
+      if (java.nio.file.Files.exists(file)) {
+        java.util.List<String> lines = java.nio.file.Files.readAllLines(file, java.nio.charset.StandardCharsets.UTF_8);
+        for (String rawLine : lines){
+          String line = rawLine.trim();
+          if (line.isEmpty()) continue;
+          if (line.startsWith("#")) continue;
+          if (line.startsWith("export ")) line = line.substring(7).trim();
+          int eq = line.indexOf('=');
+          if (eq <= 0) continue;
+          String key = line.substring(0, eq).trim();
+          String val = line.substring(eq+1).trim();
+          if (val.length() >= 2){
+            char a = val.charAt(0), b = val.charAt(val.length()-1);
+            if ((a=='"' && b=='"') || (a=='\'' && b=='\'')) val = val.substring(1, val.length()-1);
+          }
+          m.put(key, val);
         }
-        m.put(key, val);
       }
     }catch(IOException e){ throw new RuntimeException(e); }
     if (asBool(override)){

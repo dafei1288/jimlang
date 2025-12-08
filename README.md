@@ -126,7 +126,14 @@ var d = add
 println( d(2, 3) )
 ```
 
-## Web Server (built-in)
+
+## Environment
+- Built-ins: env_get(name[, default]) / env_all() / load_env(path[, override=false])
+- Behavior:
+  - env_get reads from an in-memory overlay (populated via load_env(..., true)) before System.getenv
+  - env_all returns merged overlay + process envs (overlay wins)
+  - load_env parses .env (supports leading export, # comments, key=value, strip quotes). If file missing, returns {}.
+See doc/QUICKREF.md.## Web Server (built-in)
 ```jim
 function api(req){ return { ok: true } }
 start_webserver(8080, "/api/ping", "GET", api)

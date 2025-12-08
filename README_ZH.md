@@ -95,7 +95,14 @@ p("ok")
 ```
 
 ## 字符串
-- 支持三引号多行字符串：''' ... '''（保留换行与空白）。详见 doc/QUICKREF.md。## 内置 Web 服务
+- 支持三引号多行字符串：''' ... '''（保留换行与空白）。详见 doc/QUICKREF.md。
+## 环境变量
+- 内置：env_get(name[, default]) / env_all() / load_env(path[, override=false])
+- 行为：
+  - env_get 先读内存覆盖层（由 load_env(..., true) 注入），否则读进程环境变量
+  - env_all 返回覆盖层 + 进程环境变量（覆盖层优先）
+  - load_env 解析 .env（支持 export、# 注释、key=value、去首尾引号）。若文件不存在，返回 {}。
+详见 doc/QUICKREF.md。## 内置 Web 服务
 ```jim
 function api(req){ return { ok: true } }
 start_webserver(8080, "/api/ping", "GET", api)
