@@ -75,7 +75,18 @@ println(b)
 - keys(obj) -> array; values(obj) -> array
 - parseInt(s) / parseFloat(s) -> number
 
-## JSON / YAML
+
+## 环境变量（文件）
+- 使用脚本库解析 .env 文件（示例：examples/lib_env.jim）
+`jim
+// in your script
+var ENV = load_env(".env")
+println(ENV.DB_URL)
+
+var cfg = { host: "localhost" }
+load_env_into(".env", cfg)  // 将 .env 合并进已有 map
+`
+注：当前内置函数不直接读取进程环境变量；如需内置 env_get/env_all，请告知，我可以在内核侧补充。## JSON / YAML
 ```jim
 var o = { a: 1, b: [2,3] }
 var j = json_encode(o)
