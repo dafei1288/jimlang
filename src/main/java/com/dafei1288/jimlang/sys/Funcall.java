@@ -1188,6 +1188,35 @@ public class Funcall {
     double temp = parseDouble(cfg.get("temperature"), 0.2);
     boolean stream = parseBool(cfg.get("stream"), false);
     boolean thinking = parseBool(cfg.get("thinking"), false);
+    // try LangChain4j (non-stream) if available
+    try {
+      if (!stream && "openai".equalsIgnoreCase(apiType)) {
+        Class<?> chatClz = Class.forName("dev.langchain4j.model.openai.OpenAiChatModel");
+        java.lang.reflect.Method builderM = chatClz.getMethod("builder");
+        Object b = builderM.invoke(null);
+        try { b.getClass().getMethod("apiKey", String.class).invoke(b, apiKey); } catch(Throwable ignore){}
+        try { b.getClass().getMethod("baseUrl", String.class).invoke(b, baseUrl); } catch(Throwable ignore){}
+        try { b.getClass().getMethod("modelName", String.class).invoke(b, model); } catch(Throwable ignore){}
+        try { b.getClass().getMethod("temperature", Double.class).invoke(b, Double.valueOf(temp)); } catch(Throwable ignore){}
+        Object mdl = b.getClass().getMethod("build").invoke(b);
+        try {
+          java.lang.reflect.Method gm = mdl.getClass().getMethod("generate", String.class);
+          Object ans = gm.invoke(mdl, text);
+          return String.valueOf(ans);
+        } catch (NoSuchMethodException nsme) {
+          try {
+            Class<?> umClz = Class.forName("dev.langchain4j.data.message.UserMessage");
+            java.lang.reflect.Method umFactory = umClz.getMethod("userMessage", String.class);
+            Object um = umFactory.invoke(null, text);
+            java.lang.reflect.Method gm2 = mdl.getClass().getMethod("generate", umClz);
+            Object resp = gm2.invoke(mdl, um);
+            try { java.lang.reflect.Method textM = resp.getClass().getMethod("text"); return String.valueOf(textM.invoke(resp)); } catch(Throwable ignore){}
+            try { java.lang.reflect.Method contentM = resp.getClass().getMethod("content"); return String.valueOf(contentM.invoke(resp)); } catch(Throwable ignore){}
+            return String.valueOf(resp);
+          } catch(Throwable ignore2){}
+        }
+      }
+    } catch(Throwable ignore){}
     if (apiKey == null || apiKey.isEmpty()) throw new RuntimeException("ask_llm: missing api_key (set LLM_API_KEY or pass overrides)");
     if (!"openai".equalsIgnoreCase(apiType)) throw new RuntimeException("ask_llm: unsupported api_type: "+apiType+" (only 'openai' compatible supported)");
     String url = baseUrl;
