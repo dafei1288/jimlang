@@ -1,0 +1,10 @@
+// ask_llm demo (OpenAI-compatible)
+// Defaults: name=ds, model=deepseek-chat, base_url=https://api.deepseek.com, api_type=openai, temperature=0.2, stream=false, thinking=false
+// API key resolution order: overrides > ENV_OVERLAY/LLM_API_KEY > System.getenv("LLM_API_KEY")
+// You can also set DEEPSEEK_API_KEY
+
+// Option A: use defaults (ensure LLM_API_KEY or DEEPSEEK_API_KEY is set)
+// println( ask_llm("今天天气？") )
+
+// Option B: override via map
+// println( ask_llm("简述项目特点", { model: "deepseek-chat", temperature: 0.3 }) )

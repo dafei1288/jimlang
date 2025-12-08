@@ -225,3 +225,18 @@ start_webserver(8082,
 )
 ```
 示例项目：examples/web_app（完整 Web 应用演示）- 端口可从环境变量读取：先 load_env(".env", true)；再用 env_get("PORT", 8080)。
+
+## LLM（OpenAI 兼容）
+- ask_llm(prompt[, overrides]) -> string
+- 默认配置（无 env 时）
+  - name=ds, model=deepseek-chat, base_url=https://api.deepseek.com, api_type=openai, temperature=0.2, stream=false, thinking=false
+- 覆盖优先级：`overrides` 参数 > 覆盖层/环境变量（LLM_*）> 默认值
+  - 支持的 LLM_*：LLM_NAME/LLM_MODEL/LLM_BASE_URL/LLM_API_KEY/LLM_API_TYPE/LLM_TEMPERATURE/LLM_STREAM/LLM_THINKING（也可用 DEEPSEEK_API_KEY）
+- 用法：
+```jim
+// 使用默认（需先设置 LLM_API_KEY 或 DEEPSEEK_API_KEY）
+// println( ask_llm("今天天气？") )
+
+// 使用 overrides map 覆盖
+// println( ask_llm("简述项目特点", { temperature: 0.3, model: "deepseek-chat" }) )
+```
