@@ -1213,6 +1213,40 @@ public class Funcall {
         .build();
       java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
       int sc = resp.statusCode(); String respBody = resp.body();
+      String ctype = resp.headers().firstValue("Content-Type").orElse("");
+      if ((ctype != null && ctype.contains("event-stream")) || (respBody != null && respBody.startsWith("data:"))) {
+        String[] lines = respBody.split("\r?\n");
+        StringBuilder acc2 = new StringBuilder();
+        for (String line2 : lines) {
+          if (line2 == null) continue;
+          String line = line2.trim();
+          if (line.isEmpty()) continue;
+          if (line.startsWith("data:")) {
+            String data = line.substring(5).trim();
+            if ("[DONE]".equals(data)) break;
+            try {
+              Object obj = json_decode(data);
+              if (obj instanceof java.util.Map){
+                java.util.Map mm = (java.util.Map)obj;
+                Object choices = mm.get("choices");
+                if (choices instanceof java.util.List && !((java.util.List)choices).isEmpty()){
+                  Object first = ((java.util.List)choices).get(0);
+                  if (first instanceof java.util.Map){
+                    java.util.Map fm = (java.util.Map)first;
+                    Object msg = fm.get("message");
+                    String chunk = null;
+                    if (msg instanceof java.util.Map){ Object content = ((java.util.Map)msg).get("content"); if (content != null) chunk = String.valueOf(content); }
+                    if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); }
+                    if (chunk != null && !chunk.isEmpty()) { System.out.print(chunk); acc2.append(chunk); }
+                  }
+                }
+              }
+            } catch(Exception ignore){}
+          }
+        }
+        System.out.println();
+        return acc2.toString();
+      }
       if (sc >= 400) throw new RuntimeException("ask_llm HTTP "+sc+": "+respBody);
       Object parsed = json_decode(respBody);
       if (parsed instanceof java.util.Map){
