@@ -1,18 +1,21 @@
 @echo off
-REM JimLang Windows launcher script
+REM JimLang Windows launcher script with /ext classpath support
 REM
 REM Usage:
 REM   jimlang.cmd script.jim
 REM   jimlang.cmd --help
 REM   jimlang.cmd --version
 
-setlocal
+setlocal EnableDelayedExpansion
 
 REM Resolve script directory (bin)
-set SCRIPT_DIR=%~dp0
+set "SCRIPT_DIR=%~dp0"
 
 REM Set JAR path (under target)
-set JIMLANG_JAR=%SCRIPT_DIR%..\target\jimlang-1.0-SNAPSHOT-jar-with-dependencies.jar
+set "JIMLANG_JAR=%SCRIPT_DIR%..\target\jimlang-1.0-SNAPSHOT-jar-with-dependencies.jar"
+
+REM Optional external jars directory
+set "EXT_DIR=%SCRIPT_DIR%..\ext"
 
 REM Check JAR exists
 if not exist "%JIMLANG_JAR%" (
@@ -33,7 +36,15 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Run JimLang
-java -jar "%JIMLANG_JAR%" %*
+REM Build classpath: shaded jar + ext/*.jar (recursive)
+set "JIMLANG_CP=%JIMLANG_JAR%"
+if exist "%EXT_DIR%" (
+    for /R "%EXT_DIR%" %%F in (*.jar) do (
+        set "JIMLANG_CP=!JIMLANG_CP!;%%~fF"
+    )
+)
+
+REM Run JimLang (use -cp so ext jars are visible)
+java -cp "%JIMLANG_CP%" com.dafei1288.jimlang.Main %*
 
 endlocal
