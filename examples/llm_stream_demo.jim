@@ -1,1 +1,3 @@
-print(ask_llm("用一句话描述春天", { stream: true, temperature: 0.2 }))
+// var c = ask_llm("微型断路器dz47 帮我解释一下", { stream: true, temperature: 0.2 })
+var c = ask_llm("描述一下春天", { stream: true, temperature: 0.2 })
+print("==>"+ c)

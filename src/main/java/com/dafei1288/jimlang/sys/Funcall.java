@@ -360,7 +360,7 @@ public class Funcall {
     list.add(0, value);
     return list.size();
   }
-  
+
   // ------------- built-ins: type/introspection + collections -------------
   @SuppressWarnings({"rawtypes"})
   public String join(Object arr, Object sep){
@@ -374,7 +374,7 @@ public class Funcall {
     }
     return sb.toString();
   }
-  
+
   @SuppressWarnings({"rawtypes","unchecked"})
   public java.util.List keys(Object obj){
     if (obj instanceof java.util.Map){
@@ -382,7 +382,7 @@ public class Funcall {
     }
     throw new RuntimeException("Expected object (map) but got: " + (obj==null?"null":obj.getClass().getSimpleName()));
   }
-  
+
   @SuppressWarnings({"rawtypes","unchecked"})
   public java.util.List values(Object obj){
     if (obj instanceof java.util.Map){
@@ -390,7 +390,7 @@ public class Funcall {
     }
     throw new RuntimeException("Expected object (map) but got: " + (obj==null?"null":obj.getClass().getSimpleName()));
   }
-  
+
   public String typeof(Object x){
     if (x == null) return "null";
     if (x instanceof java.util.List) return "array";
@@ -400,10 +400,10 @@ public class Funcall {
     if (x instanceof Boolean) return "boolean";
     return x.getClass().getSimpleName();
   }
-  
+
   public Boolean isArray(Object x){ return (x instanceof java.util.List); }
   public Boolean isObject(Object x){ return (x instanceof java.util.Map); }
-  
+
   public Number parseInt(Object s){
     String str = asString(s).trim();
     if (str.isEmpty()) return 0;
@@ -855,7 +855,7 @@ public class Funcall {
             exchange.close();
           }
         });
-      
+
       server.setExecutor(java.util.concurrent.Executors.newCachedThreadPool());
       server.start();
       SERVERS.put(p, server);
@@ -1043,7 +1043,7 @@ public class Funcall {
     }
     // treat name as function name
     return new com.dafei1288.jimlang.Delegate(asString(del)).withBound(arg);
-  }  
+  }
   // ------------- JSON/YAML file helpers -------------
   public Object json_load(Object path){
     String s = file_read(path);
@@ -1136,6 +1136,7 @@ public class Funcall {
     m.put("temperature", 0.2);
     m.put("stream", Boolean.FALSE);
     m.put("thinking", Boolean.FALSE);
+    m.put("print", Boolean.TRUE);
     return m;
   }
   private static String firstEnv(String... keys){
@@ -1188,7 +1189,8 @@ public class Funcall {
     double temp = parseDouble(cfg.get("temperature"), 0.2);
     boolean stream = parseBool(cfg.get("stream"), false);
     boolean debug = false; try { debug = parseBool(firstEnv("LLM_DEBUG","DEBUG"), false); } catch(Exception __) {}
-    boolean thinking = parseBool(cfg.get("thinking"), false);
+    boolean thinking = parseBool(cfg.get("thinking"), false);    boolean printTokens = parseBool(cfg.get("print"), true);
+    Object onToken = cfg.get("on_token");
     // try LangChain4j (non-stream) if available
     try {
       if (!stream && "openai".equalsIgnoreCase(apiType)) {
@@ -1220,7 +1222,71 @@ public class Funcall {
     } catch(Throwable ignore){}
     if (apiKey == null || apiKey.isEmpty()) throw new RuntimeException("ask_llm: missing api_key (set LLM_API_KEY or pass overrides)");
     if (!"openai".equalsIgnoreCase(apiType)) throw new RuntimeException("ask_llm: unsupported api_type: "+apiType+" (only 'openai' compatible supported)");
-    String url = baseUrl;
+        // --- LC4J streaming attempt (OpenAiStreamingChatModel)
+    try {
+      if (stream && "openai".equalsIgnoreCase(apiType)) {
+        Class<?> sclz = Class.forName("dev.langchain4j.model.openai.OpenAiStreamingChatModel");
+        Object b = sclz.getMethod("builder").invoke(null);
+        try { b.getClass().getMethod("apiKey", String.class).invoke(b, apiKey); } catch (Throwable ignore) {}
+        try { b.getClass().getMethod("baseUrl", String.class).invoke(b, baseUrl); } catch (Throwable ignore) {}
+        try { b.getClass().getMethod("modelName", String.class).invoke(b, model); } catch (Throwable ignore) {}
+        try { b.getClass().getMethod("temperature", Double.class).invoke(b, Double.valueOf(temp)); } catch (Throwable ignore) {}
+        Object mdl = b.getClass().getMethod("build").invoke(b);
+        java.lang.reflect.Method target = null;
+        Class<?> handlerIface = null;
+        for (java.lang.reflect.Method mth : mdl.getClass().getMethods()) {
+          String n = mth.getName();
+          if (!"generate".equals(n) && !"stream".equals(n)) continue;
+          Class<?>[] pts = mth.getParameterTypes();
+          if (pts.length == 2 && String.class.equals(pts[0]) && pts[1].isInterface()
+              && pts[1].getName().toLowerCase(java.util.Locale.ROOT).contains("streamingresponsehandler")) {
+            target = mth; handlerIface = pts[1]; break;
+          }
+        }
+        if (target == null) {
+          for (java.lang.reflect.Method mth : mdl.getClass().getMethods()) {
+            Class<?>[] pts = mth.getParameterTypes();
+            if (pts.length == 2 && String.class.equals(pts[0]) && pts[1].isInterface()
+                && pts[1].getName().toLowerCase(java.util.Locale.ROOT).contains("streamingresponsehandler")) {
+              target = mth; handlerIface = pts[1]; break;
+            }
+          }
+        }
+        if (target != null && handlerIface != null) {
+          if (debug) System.out.println("[lc4j] using OpenAiStreamingChatModel");
+          final StringBuilder acc_stream = new StringBuilder();
+          final java.util.concurrent.CountDownLatch done = new java.util.concurrent.CountDownLatch(1);
+          Object handler = java.lang.reflect.Proxy.newProxyInstance(
+            handlerIface.getClassLoader(),
+            new Class[]{handlerIface},
+            new java.lang.reflect.InvocationHandler() {
+              public Object invoke(Object p2, java.lang.reflect.Method m2, Object[] a2) {
+                String mn = m2.getName().toLowerCase(java.util.Locale.ROOT);
+                try {
+                  if (a2 != null && a2.length == 1 && a2[0] instanceof String) {
+                    String tok = (String) a2[0];
+                    if (tok != null && !tok.isEmpty()) {
+                      System.out.print(tok);
+                      System.out.flush();
+                      acc_stream.append(tok);
+                    }
+                  }
+                  if (mn.contains("complete")) done.countDown();
+                  if (mn.contains("error")) done.countDown();
+                } catch (Throwable t) { done.countDown(); }
+                return null;
+              }
+            }
+          );
+          target.invoke(mdl, text, handler);
+          try { done.await(300, java.util.concurrent.TimeUnit.SECONDS); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+          System.out.println();
+          return acc_stream.toString();
+        }
+      }
+    } catch (Throwable ignore) {
+      if (debug) System.out.println("[lc4j] streaming model not available, fallback to HTTP SSE");
+    }String url = baseUrl;
     if (!url.endsWith("/")) url += "/";
     url += "v1/chat/completions";
     // build body JSON
@@ -1235,30 +1301,33 @@ public class Funcall {
     sb.append('}');
     String body = sb.toString();
     try{
-      java.net.http.HttpClient client = java.net.http.HttpClient.newHttpClient();
+      java.net.http.HttpClient client = java.net.http.HttpClient.newBuilder().version(java.net.http.HttpClient.Version.HTTP_1_1).build();
       java.net.http.HttpRequest req = java.net.http.HttpRequest.newBuilder(java.net.URI.create(url))
         .header("Content-Type","application/json")
         .header("Authorization","Bearer "+apiKey)
-        .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
+              .header("Accept", stream ? "text/event-stream" : "application/json")
+              .POST(java.net.http.HttpRequest.BodyPublishers.ofString(body, java.nio.charset.StandardCharsets.UTF_8))
         .build();
-      java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
-      int sc = resp.statusCode(); String respBody = resp.body();
-      String ctype = resp.headers().firstValue("Content-Type").orElse("");
-      if (debug) {
-        System.out.println("[ask_llm] HTTP "+sc+" CT="+ctype);
-        String b = respBody;
-        if (b == null) b = "<null>";
-        int plen = Math.min(b.length(), 800);
-        System.out.println("[body] " + b.substring(0, plen));
-      }
-      if ((ctype != null && ctype.contains("event-stream")) || (respBody != null && respBody.startsWith("data:"))) {
-        String[] lines = respBody.split("\r?\n");
+            if (stream) {
+        // streaming: use InputStream and process SSE line-by-line
+        java.net.http.HttpResponse<java.io.InputStream> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofInputStream());
+        int sc = resp.statusCode();
+        String ctype = resp.headers().firstValue("Content-Type").orElse("");
+        if (debug) {
+          System.out.println("[ask_llm] HTTP " + sc + " CT=" + ctype);
+        }
+        if (sc >= 400) {
+          String err = new String(resp.body().readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+          throw new RuntimeException("ask_llm HTTP " + sc + ": " + err);
+        }
         StringBuilder acc2 = new StringBuilder();
-        for (String line2 : lines) {
-          if (line2 == null) continue;
-          String line = line2.trim();
-          if (line.isEmpty()) continue;
-          if (line.startsWith("data:")) {
+        try (java.io.BufferedReader br = new java.io.BufferedReader(new java.io.InputStreamReader(resp.body(), java.nio.charset.StandardCharsets.UTF_8))) {
+          String line2;
+          while ((line2 = br.readLine()) != null) {
+            String line = line2 == null ? null : line2.trim();
+            if (line == null || line.isEmpty()) continue;
+            if (debug && line.length() <= 800) System.out.println("[SSE] " + line);
+            if (!line.startsWith("data:")) continue;
             String data = line.substring(5).trim();
             if ("[DONE]".equals(data)) break;
             try {
@@ -1270,12 +1339,12 @@ public class Funcall {
                   Object first = ((java.util.List)choices).get(0);
                   if (first instanceof java.util.Map){
                     java.util.Map fm = (java.util.Map)first;
-                                        String chunk = null;
+                    String chunk = null;
                     Object delta = fm.get("delta");
                     if (delta instanceof java.util.Map){ Object c=((java.util.Map)delta).get("content"); if (c!=null) chunk = String.valueOf(c); }
                     if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); }
                     if (chunk == null){ Object msg = fm.get("message"); if (msg instanceof java.util.Map){ Object c=((java.util.Map)msg).get("content"); if (c!=null) chunk = String.valueOf(c); } }
-                    if (chunk != null && !chunk.isEmpty()) { System.out.print(chunk); acc2.append(chunk); }
+                    if (chunk != null && !chunk.isEmpty()) { com.dafei1288.jimlang.JimLangVistor vv = com.dafei1288.jimlang.Host.current(); if (vv != null && onToken != null) { try { vv.callFromHost(onToken, java.util.Arrays.asList(chunk)); } catch (Throwable __) { if (debug) System.out.println("[ask_llm] on_token error: " + __); } } if (printTokens) { System.out.print(chunk); System.out.flush(); } acc2.append(chunk); }
                   }
                 }
               }
@@ -1286,23 +1355,70 @@ public class Funcall {
         System.out.println();
         if (debug) { System.out.println("[SSE-agg] " + acc2.toString()); }
         return acc2.toString();
-      }
-      if (sc >= 400) throw new RuntimeException("ask_llm HTTP "+sc+": "+respBody);
-      Object parsed = json_decode(respBody);
-      if (parsed instanceof java.util.Map){
-        java.util.Map m = (java.util.Map)parsed;
-        Object choices = m.get("choices");
-        if (choices instanceof java.util.List && !((java.util.List)choices).isEmpty()){
-          Object first = ((java.util.List)choices).get(0);
-          if (first instanceof java.util.Map){
-            java.util.Map fm = (java.util.Map)first;
-            Object msg = fm.get("message");
-            if (msg instanceof java.util.Map){ Object content = ((java.util.Map)msg).get("content"); if (content != null) return String.valueOf(content); }
-            Object text2 = fm.get("text"); if (text2 != null) return String.valueOf(text2);
+      } else {
+        java.net.http.HttpResponse<String> resp = client.send(req, java.net.http.HttpResponse.BodyHandlers.ofString(java.nio.charset.StandardCharsets.UTF_8));
+        int sc = resp.statusCode(); String respBody = resp.body();
+        String ctype = resp.headers().firstValue("Content-Type").orElse("");
+        if (debug) {
+          System.out.println("[ask_llm] HTTP "+sc+" CT="+ctype);
+          String b = respBody;
+          if (b == null) b = "<null>";
+          int plen = Math.min(b.length(), 800);
+          System.out.println("[body] " + b.substring(0, plen));
+        }
+        if ((ctype != null && ctype.contains("event-stream")) || (respBody != null && respBody.startsWith("data:"))) {
+          String[] lines = respBody.split("\r?\n");
+          StringBuilder acc2 = new StringBuilder();
+          for (String line2 : lines) {
+            if (line2 == null) continue;
+            String line = line2.trim();
+            if (line.isEmpty()) continue;
+            if (line.startsWith("data:")) {
+              String data = line.substring(5).trim();
+              if ("[DONE]".equals(data)) break;
+              try {
+                Object obj = json_decode(data);
+                if (obj instanceof java.util.Map){
+                  java.util.Map mm = (java.util.Map)obj;
+                  Object choices = mm.get("choices");
+                  if (choices instanceof java.util.List && !((java.util.List)choices).isEmpty()){
+                    Object first = ((java.util.List)choices).get(0);
+                    if (first instanceof java.util.Map){
+                      java.util.Map fm = (java.util.Map)first;
+                      String chunk = null;
+                      Object delta = fm.get("delta");
+                      if (delta instanceof java.util.Map){ Object c=((java.util.Map)delta).get("content"); if (c!=null) chunk = String.valueOf(c); }
+                      if (chunk == null){ Object text2 = fm.get("text"); if (text2 != null) chunk = String.valueOf(text2); }
+                      if (chunk == null){ Object msg = fm.get("message"); if (msg instanceof java.util.Map){ Object c=((java.util.Map)msg).get("content"); if (c!=null) chunk = String.valueOf(c); } }
+                      if (chunk != null && !chunk.isEmpty()) { com.dafei1288.jimlang.JimLangVistor vv = com.dafei1288.jimlang.Host.current(); if (vv != null && onToken != null) { try { vv.callFromHost(onToken, java.util.Arrays.asList(chunk)); } catch (Throwable __) { if (debug) System.out.println("[ask_llm] on_token error: " + __); } } if (printTokens) { System.out.print(chunk); System.out.flush(); } acc2.append(chunk); }
+                    }
+                  }
+                }
+              } catch(Exception ignore){}
+            }
+          }
+          if (debug) { System.out.println("[SSE-acc] " + acc2.toString()); }
+          System.out.println();
+          if (debug) { System.out.println("[SSE-agg] " + acc2.toString()); }
+          return acc2.toString();
+        }
+        if (sc >= 400) throw new RuntimeException("ask_llm HTTP "+sc+": "+respBody);
+        Object parsed = json_decode(respBody);
+        if (parsed instanceof java.util.Map){
+          java.util.Map m = (java.util.Map)parsed;
+          Object choices = m.get("choices");
+          if (choices instanceof java.util.List && !((java.util.List)choices).isEmpty()){
+            Object first = ((java.util.List)choices).get(0);
+            if (first instanceof java.util.Map){
+              java.util.Map fm = (java.util.Map)first;
+              Object msg = fm.get("message");
+              if (msg instanceof java.util.Map){ Object content = ((java.util.Map)msg).get("content"); if (content != null) return String.valueOf(content); }
+              Object text2 = fm.get("text"); if (text2 != null) return String.valueOf(text2);
+            }
           }
         }
+        return respBody;
       }
-      return respBody;
     }catch(Exception e){ throw new RuntimeException(e); }
   }private static boolean hasMethod(String name){
     if (name == null) return false;
