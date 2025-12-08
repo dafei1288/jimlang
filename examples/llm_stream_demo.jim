@@ -1,7 +1,1 @@
-// Streaming demo: prints tokens as they arrive, then a newline.
-// Ensure you have a valid key via LLM_API_KEY/DEEPSEEK_API_KEY or defaults in core.
-// ask_llm will print streaming output itself when stream=true.
-
-// Use overrides to enable streaming
-load_env(".env_llm")
 print(ask_llm("用一句话描述春天", { stream: true, temperature: 0.2 }))
