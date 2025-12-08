@@ -1,0 +1,17 @@
+// Web handler that proxies to ask_llm
+// GET /chat?q=... -> returns LLM answer as text
+
+// Optionally load .env to overlay
+// load_env("examples/env/.env", true)
+
+function chat(req){
+  var q = req.query.q
+  if (len(q) == 0) { q = "你好" }
+  var ans = ask_llm(q)
+  return send_text(ans)
+}
+
+var port = env_get("PORT", 8092)
+start_webserver(port,
+  "/chat", "GET", chat
+)
