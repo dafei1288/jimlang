@@ -1,0 +1,33 @@
+// Env helpers implemented in JimLang (file-based)
+// Usage:
+//   var ENV = load_env(".env")
+//   println(ENV.DB_URL)
+//   // merge into existing map
+//   var cfg = { }; load_env_into(".env", cfg)
+
+function load_env(path){
+  var s = file_read(path); if (typeof(s) == "null") { return {} }
+  var lines = split(s, "\n"); var m = {}
+  for (var i = 0; i < len(lines); i = i + 1) {
+    var raw = trim(lines[i])
+    if (raw == "") { continue }
+    if (startsWith(raw, "#")) { continue }
+    if (startsWith(raw, "export ")) { raw = substring(raw, 7) }
+    var idx = indexOf(raw, "="); if (idx < 0) { continue }
+    var key = trim(substring(raw, 0, idx))
+    var val = trim(substring(raw, idx + 1))
+    if (len(val) >= 2) {
+      var a = substring(val, 0, 1); var b = substring(val, len(val)-1)
+      if ((a == '"' && b == '"') || (a == "'" && b == "'")) { val = substring(val, 1, len(val)-1) }
+    }
+    m[key] = val
+  }
+  return m
+}
+
+function load_env_into(path, target){
+  var m = load_env(path)
+  var ks = keys(m)
+  for (var i = 0; i < len(ks); i = i + 1) { var k = ks[i]; target[k] = m[k] }
+  return target
+}
