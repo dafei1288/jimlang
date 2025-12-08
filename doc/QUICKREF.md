@@ -255,3 +255,4 @@ print(ask_llm("用一句话描述春天", { stream: true, temperature: 0.2 }))
 $code | bin\jimlang.cmd -
 ```
 - 注意：在 overrides 对象里，'print' 是关键字，推荐使用 stream_print 代替（与 print 等效）。
+- 示例：examples/llm_on_token_demo.jim（stream_print:false + on_token 回调演示）
