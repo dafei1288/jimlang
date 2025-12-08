@@ -1,0 +1,6 @@
+var s = '''
+Hello,
+Multi-line
+JimLang!
+'''
+println(s)

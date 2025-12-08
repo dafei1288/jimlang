@@ -19,11 +19,11 @@ public class JimLangParser extends Parser {
 	public static final int
 		T__0=1, T__1=2, T__2=3, T__3=4, T__4=5, T__5=6, T__6=7, T__7=8, T__8=9, 
 		VAR=10, FUNCTION=11, RETURN=12, NEW=13, IF=14, ELSE=15, WHILE=16, FOR=17, 
-		BREAK=18, CONTINUE=19, BOOLEAN_LITERAL=20, STRING_LITERAL=21, NUMBER_LITERAL=22, 
-		ID=23, WS=24, COMMENT=25, LINE_COMMENT=26, FAC=27, POW=28, MUL=29, DIV=30, 
-		ADD=31, SUB=32, DOT=33, LT=34, GT=35, LE=36, GE=37, EQ=38, NE=39, AND=40, 
-		OR=41, B_OPEN=42, B_CLOSE=43, S_OPEN=44, S_CLOSE=45, C_OPEN=46, C_CLOSE=47, 
-		COMMA=48, SEMI=49, COLON=50, ASSIGN=51;
+		BREAK=18, CONTINUE=19, BOOLEAN_LITERAL=20, STRING_LITERAL=21, ML_STRING_LITERAL=22, 
+		NUMBER_LITERAL=23, ID=24, WS=25, COMMENT=26, LINE_COMMENT=27, FAC=28, 
+		POW=29, MUL=30, DIV=31, ADD=32, SUB=33, DOT=34, LT=35, GT=36, LE=37, GE=38, 
+		EQ=39, NE=40, AND=41, OR=42, B_OPEN=43, B_CLOSE=44, S_OPEN=45, S_CLOSE=46, 
+		C_OPEN=47, C_CLOSE=48, COMMA=49, SEMI=50, COLON=51, ASSIGN=52;
 	public static final int
 		RULE_prog = 0, RULE_statementList = 1, RULE_assignment = 2, RULE_assignmentStatement = 3, 
 		RULE_lvalue = 4, RULE_returnStatement = 5, RULE_ifStatement = 6, RULE_whileStatement = 7, 
@@ -54,10 +54,10 @@ public class JimLangParser extends Parser {
 			null, "'print'", "'println'", "'string'", "'number'", "'boolean'", "'int'", 
 			"'float'", "'array'", "'object'", "'var'", "'function'", "'return'", 
 			"'new'", "'if'", "'else'", "'while'", "'for'", "'break'", "'continue'", 
-			null, null, null, null, null, null, null, "'!'", "'^'", "'*'", "'/'", 
-			"'+'", "'-'", "'.'", "'<'", "'>'", "'<='", "'>='", "'=='", "'!='", "'&&'", 
-			"'||'", "'('", "')'", "'['", "']'", "'{'", "'}'", "','", "';'", "':'", 
-			"'='"
+			null, null, null, null, null, null, null, null, "'!'", "'^'", "'*'", 
+			"'/'", "'+'", "'-'", "'.'", "'<'", "'>'", "'<='", "'>='", "'=='", "'!='", 
+			"'&&'", "'||'", "'('", "')'", "'['", "']'", "'{'", "'}'", "','", "';'", 
+			"':'", "'='"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -65,10 +65,10 @@ public class JimLangParser extends Parser {
 		return new String[] {
 			null, null, null, null, null, null, null, null, null, null, "VAR", "FUNCTION", 
 			"RETURN", "NEW", "IF", "ELSE", "WHILE", "FOR", "BREAK", "CONTINUE", "BOOLEAN_LITERAL", 
-			"STRING_LITERAL", "NUMBER_LITERAL", "ID", "WS", "COMMENT", "LINE_COMMENT", 
-			"FAC", "POW", "MUL", "DIV", "ADD", "SUB", "DOT", "LT", "GT", "LE", "GE", 
-			"EQ", "NE", "AND", "OR", "B_OPEN", "B_CLOSE", "S_OPEN", "S_CLOSE", "C_OPEN", 
-			"C_CLOSE", "COMMA", "SEMI", "COLON", "ASSIGN"
+			"STRING_LITERAL", "ML_STRING_LITERAL", "NUMBER_LITERAL", "ID", "WS", 
+			"COMMENT", "LINE_COMMENT", "FAC", "POW", "MUL", "DIV", "ADD", "SUB", 
+			"DOT", "LT", "GT", "LE", "GE", "EQ", "NE", "AND", "OR", "B_OPEN", "B_CLOSE", 
+			"S_OPEN", "S_CLOSE", "C_OPEN", "C_CLOSE", "COMMA", "SEMI", "COLON", "ASSIGN"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -253,7 +253,7 @@ public class JimLangParser extends Parser {
 			setState(91);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 92358993464326L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 184717986974726L) != 0)) {
 				{
 				setState(89);
 				_errHandler.sync(this);
@@ -731,7 +731,7 @@ public class JimLangParser extends Parser {
 			setState(139);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 92358992461830L) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 184717985972230L) != 0)) {
 				{
 				setState(138);
 				forCondition();
@@ -1115,7 +1115,7 @@ public class JimLangParser extends Parser {
 			setState(178);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 4388919705600L) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & 8777839411200L) != 0)) {
 				{
 				{
 				setState(173);
@@ -1297,7 +1297,7 @@ public class JimLangParser extends Parser {
 			setState(199);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 92358992461830L) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 184717985972230L) != 0)) {
 				{
 				setState(198);
 				parameterList();
@@ -1431,7 +1431,7 @@ public class JimLangParser extends Parser {
 			setState(218);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 92358992461830L) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 184717985972230L) != 0)) {
 				{
 				setState(217);
 				parameterList();
@@ -1640,6 +1640,7 @@ public class JimLangParser extends Parser {
 				break;
 			case BOOLEAN_LITERAL:
 			case STRING_LITERAL:
+			case ML_STRING_LITERAL:
 			case NUMBER_LITERAL:
 				enterOuterAlt(_localctx, 3);
 				{
@@ -1781,7 +1782,7 @@ public class JimLangParser extends Parser {
 			setState(255);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 92358992461830L) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 184717985972230L) != 0)) {
 				{
 				setState(254);
 				parameterList();
@@ -1840,7 +1841,7 @@ public class JimLangParser extends Parser {
 			setState(268);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 92358992461830L) != 0)) {
+			if ((((_la) & ~0x3f) == 0 && ((1L << _la) & 184717985972230L) != 0)) {
 				{
 				setState(260);
 				expression();
@@ -2002,6 +2003,7 @@ public class JimLangParser extends Parser {
 	public static class ConstVarContext extends ParserRuleContext {
 		public TerminalNode NUMBER_LITERAL() { return getToken(JimLangParser.NUMBER_LITERAL, 0); }
 		public TerminalNode STRING_LITERAL() { return getToken(JimLangParser.STRING_LITERAL, 0); }
+		public TerminalNode ML_STRING_LITERAL() { return getToken(JimLangParser.ML_STRING_LITERAL, 0); }
 		public TerminalNode BOOLEAN_LITERAL() { return getToken(JimLangParser.BOOLEAN_LITERAL, 0); }
 		public ConstVarContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
@@ -2023,7 +2025,7 @@ public class JimLangParser extends Parser {
 			{
 			setState(289);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 7340032L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 15728640L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -2078,7 +2080,7 @@ public class JimLangParser extends Parser {
 			{
 			setState(291);
 			_la = _input.LA(1);
-			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 4388919705600L) != 0)) ) {
+			if ( !((((_la) & ~0x3f) == 0 && ((1L << _la) & 8777839411200L) != 0)) ) {
 			_errHandler.recoverInline(this);
 			}
 			else {
@@ -2392,7 +2394,7 @@ public class JimLangParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u00013\u0144\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
+		"\u0004\u00014\u0144\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002"+
 		"\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002"+
 		"\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002"+
 		"\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b\u0002"+
@@ -2442,8 +2444,8 @@ public class JimLangParser extends Parser {
 		"\u0001#\u0001#\u0001#\u0001#\u0001#\u0001#\u0001#\u0003#\u013a\b#\u0001"+
 		"$\u0001$\u0001$\u0005$\u013f\b$\n$\f$\u0142\t$\u0001$\u0000\u0000%\u0000"+
 		"\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u001a\u001c"+
-		"\u001e \"$&(*,.02468:<>@BDFH\u0000\u0003\u0001\u0000\u0014\u0016\u0002"+
-		"\u0000\u001d \")\u0001\u0000\u0001\u0002\u0154\u0000K\u0001\u0000\u0000"+
+		"\u001e \"$&(*,.02468:<>@BDFH\u0000\u0003\u0001\u0000\u0014\u0017\u0002"+
+		"\u0000\u001e!#*\u0001\u0000\u0001\u0002\u0154\u0000K\u0001\u0000\u0000"+
 		"\u0000\u0002[\u0001\u0000\u0000\u0000\u0004^\u0001\u0000\u0000\u0000\u0006"+
 		"c\u0001\u0000\u0000\u0000\bi\u0001\u0000\u0000\u0000\np\u0001\u0000\u0000"+
 		"\u0000\fu\u0001\u0000\u0000\u0000\u000e~\u0001\u0000\u0000\u0000\u0010"+
@@ -2471,43 +2473,43 @@ public class JimLangParser extends Parser {
 		"\u0000YV\u0001\u0000\u0000\u0000YW\u0001\u0000\u0000\u0000YX\u0001\u0000"+
 		"\u0000\u0000Z]\u0001\u0000\u0000\u0000[Y\u0001\u0000\u0000\u0000[\\\u0001"+
 		"\u0000\u0000\u0000\\\u0003\u0001\u0000\u0000\u0000][\u0001\u0000\u0000"+
-		"\u0000^_\u00053\u0000\u0000_a\u0003\u001e\u000f\u0000`b\u00051\u0000\u0000"+
+		"\u0000^_\u00054\u0000\u0000_a\u0003\u001e\u000f\u0000`b\u00052\u0000\u0000"+
 		"a`\u0001\u0000\u0000\u0000ab\u0001\u0000\u0000\u0000b\u0005\u0001\u0000"+
-		"\u0000\u0000cd\u0003\b\u0004\u0000de\u00053\u0000\u0000eg\u0003\u001e"+
-		"\u000f\u0000fh\u00051\u0000\u0000gf\u0001\u0000\u0000\u0000gh\u0001\u0000"+
+		"\u0000\u0000cd\u0003\b\u0004\u0000de\u00054\u0000\u0000eg\u0003\u001e"+
+		"\u000f\u0000fh\u00052\u0000\u0000gf\u0001\u0000\u0000\u0000gh\u0001\u0000"+
 		"\u0000\u0000h\u0007\u0001\u0000\u0000\u0000im\u0003B!\u0000jl\u00032\u0019"+
 		"\u0000kj\u0001\u0000\u0000\u0000lo\u0001\u0000\u0000\u0000mk\u0001\u0000"+
 		"\u0000\u0000mn\u0001\u0000\u0000\u0000n\t\u0001\u0000\u0000\u0000om\u0001"+
 		"\u0000\u0000\u0000pq\u0005\f\u0000\u0000qs\u0003\u001e\u000f\u0000rt\u0005"+
-		"1\u0000\u0000sr\u0001\u0000\u0000\u0000st\u0001\u0000\u0000\u0000t\u000b"+
-		"\u0001\u0000\u0000\u0000uv\u0005\u000e\u0000\u0000vw\u0005*\u0000\u0000"+
-		"wx\u0003\u001e\u000f\u0000xy\u0005+\u0000\u0000y|\u0003\u001c\u000e\u0000"+
+		"2\u0000\u0000sr\u0001\u0000\u0000\u0000st\u0001\u0000\u0000\u0000t\u000b"+
+		"\u0001\u0000\u0000\u0000uv\u0005\u000e\u0000\u0000vw\u0005+\u0000\u0000"+
+		"wx\u0003\u001e\u000f\u0000xy\u0005,\u0000\u0000y|\u0003\u001c\u000e\u0000"+
 		"z{\u0005\u000f\u0000\u0000{}\u0003\u001c\u000e\u0000|z\u0001\u0000\u0000"+
 		"\u0000|}\u0001\u0000\u0000\u0000}\r\u0001\u0000\u0000\u0000~\u007f\u0005"+
-		"\u0010\u0000\u0000\u007f\u0080\u0005*\u0000\u0000\u0080\u0081\u0003\u001e"+
-		"\u000f\u0000\u0081\u0082\u0005+\u0000\u0000\u0082\u0083\u0003\u001c\u000e"+
+		"\u0010\u0000\u0000\u007f\u0080\u0005+\u0000\u0000\u0080\u0081\u0003\u001e"+
+		"\u000f\u0000\u0081\u0082\u0005,\u0000\u0000\u0082\u0083\u0003\u001c\u000e"+
 		"\u0000\u0083\u000f\u0001\u0000\u0000\u0000\u0084\u0085\u0005\u0011\u0000"+
-		"\u0000\u0085\u0087\u0005*\u0000\u0000\u0086\u0088\u0003\u0012\t\u0000"+
+		"\u0000\u0085\u0087\u0005+\u0000\u0000\u0086\u0088\u0003\u0012\t\u0000"+
 		"\u0087\u0086\u0001\u0000\u0000\u0000\u0087\u0088\u0001\u0000\u0000\u0000"+
-		"\u0088\u0089\u0001\u0000\u0000\u0000\u0089\u008b\u00051\u0000\u0000\u008a"+
+		"\u0088\u0089\u0001\u0000\u0000\u0000\u0089\u008b\u00052\u0000\u0000\u008a"+
 		"\u008c\u0003\u0014\n\u0000\u008b\u008a\u0001\u0000\u0000\u0000\u008b\u008c"+
 		"\u0001\u0000\u0000\u0000\u008c\u008d\u0001\u0000\u0000\u0000\u008d\u008f"+
-		"\u00051\u0000\u0000\u008e\u0090\u0003\u0016\u000b\u0000\u008f\u008e\u0001"+
+		"\u00052\u0000\u0000\u008e\u0090\u0003\u0016\u000b\u0000\u008f\u008e\u0001"+
 		"\u0000\u0000\u0000\u008f\u0090\u0001\u0000\u0000\u0000\u0090\u0091\u0001"+
-		"\u0000\u0000\u0000\u0091\u0092\u0005+\u0000\u0000\u0092\u0093\u0003\u001c"+
+		"\u0000\u0000\u0000\u0091\u0092\u0005,\u0000\u0000\u0092\u0093\u0003\u001c"+
 		"\u000e\u0000\u0093\u0011\u0001\u0000\u0000\u0000\u0094\u0097\u0003\"\u0011"+
 		"\u0000\u0095\u0097\u0003\u0006\u0003\u0000\u0096\u0094\u0001\u0000\u0000"+
 		"\u0000\u0096\u0095\u0001\u0000\u0000\u0000\u0097\u0013\u0001\u0000\u0000"+
 		"\u0000\u0098\u0099\u0003\u001e\u000f\u0000\u0099\u0015\u0001\u0000\u0000"+
 		"\u0000\u009a\u009b\u0003\u0006\u0003\u0000\u009b\u0017\u0001\u0000\u0000"+
-		"\u0000\u009c\u009e\u0005\u0012\u0000\u0000\u009d\u009f\u00051\u0000\u0000"+
+		"\u0000\u009c\u009e\u0005\u0012\u0000\u0000\u009d\u009f\u00052\u0000\u0000"+
 		"\u009e\u009d\u0001\u0000\u0000\u0000\u009e\u009f\u0001\u0000\u0000\u0000"+
 		"\u009f\u0019\u0001\u0000\u0000\u0000\u00a0\u00a2\u0005\u0013\u0000\u0000"+
-		"\u00a1\u00a3\u00051\u0000\u0000\u00a2\u00a1\u0001\u0000\u0000\u0000\u00a2"+
+		"\u00a1\u00a3\u00052\u0000\u0000\u00a2\u00a1\u0001\u0000\u0000\u0000\u00a2"+
 		"\u00a3\u0001\u0000\u0000\u0000\u00a3\u001b\u0001\u0000\u0000\u0000\u00a4"+
-		"\u00a6\u0005.\u0000\u0000\u00a5\u00a7\u0003\u0002\u0001\u0000\u00a6\u00a5"+
+		"\u00a6\u0005/\u0000\u0000\u00a5\u00a7\u0003\u0002\u0001\u0000\u00a6\u00a5"+
 		"\u0001\u0000\u0000\u0000\u00a6\u00a7\u0001\u0000\u0000\u0000\u00a7\u00a8"+
-		"\u0001\u0000\u0000\u0000\u00a8\u00a9\u0005/\u0000\u0000\u00a9\u001d\u0001"+
+		"\u0001\u0000\u0000\u0000\u00a8\u00a9\u00050\u0000\u0000\u00a9\u001d\u0001"+
 		"\u0000\u0000\u0000\u00aa\u00ab\u0003 \u0010\u0000\u00ab\u001f\u0001\u0000"+
 		"\u0000\u0000\u00ac\u00b2\u0003.\u0017\u0000\u00ad\u00ae\u0003>\u001f\u0000"+
 		"\u00ae\u00af\u0003.\u0017\u0000\u00af\u00b1\u0001\u0000\u0000\u0000\u00b0"+
@@ -2520,23 +2522,23 @@ public class JimLangParser extends Parser {
 		"\u0000\u00bb\u00ba\u0001\u0000\u0000\u0000\u00bc\u00bf\u0001\u0000\u0000"+
 		"\u0000\u00bd\u00bb\u0001\u0000\u0000\u0000\u00bd\u00be\u0001\u0000\u0000"+
 		"\u0000\u00be#\u0001\u0000\u0000\u0000\u00bf\u00bd\u0001\u0000\u0000\u0000"+
-		"\u00c0\u00c1\u00052\u0000\u0000\u00c1\u00c2\u0003F#\u0000\u00c2%\u0001"+
+		"\u00c0\u00c1\u00053\u0000\u0000\u00c1\u00c2\u0003F#\u0000\u00c2%\u0001"+
 		"\u0000\u0000\u0000\u00c3\u00c4\u0005\u000b\u0000\u0000\u00c4\u00c5\u0003"+
-		"B!\u0000\u00c5\u00c7\u0005*\u0000\u0000\u00c6\u00c8\u0003@ \u0000\u00c7"+
+		"B!\u0000\u00c5\u00c7\u0005+\u0000\u0000\u00c6\u00c8\u0003@ \u0000\u00c7"+
 		"\u00c6\u0001\u0000\u0000\u0000\u00c7\u00c8\u0001\u0000\u0000\u0000\u00c8"+
-		"\u00c9\u0001\u0000\u0000\u0000\u00c9\u00ca\u0005+\u0000\u0000\u00ca\u00cc"+
-		"\u0003(\u0014\u0000\u00cb\u00cd\u00051\u0000\u0000\u00cc\u00cb\u0001\u0000"+
+		"\u00c9\u0001\u0000\u0000\u0000\u00c9\u00ca\u0005,\u0000\u0000\u00ca\u00cc"+
+		"\u0003(\u0014\u0000\u00cb\u00cd\u00052\u0000\u0000\u00cc\u00cb\u0001\u0000"+
 		"\u0000\u0000\u00cc\u00cd\u0001\u0000\u0000\u0000\u00cd\'\u0001\u0000\u0000"+
-		"\u0000\u00ce\u00d0\u0005.\u0000\u0000\u00cf\u00d1\u0003\u0002\u0001\u0000"+
+		"\u0000\u00ce\u00d0\u0005/\u0000\u0000\u00cf\u00d1\u0003\u0002\u0001\u0000"+
 		"\u00d0\u00cf\u0001\u0000\u0000\u0000\u00d0\u00d1\u0001\u0000\u0000\u0000"+
 		"\u00d1\u00d3\u0001\u0000\u0000\u0000\u00d2\u00d4\u0003\n\u0005\u0000\u00d3"+
 		"\u00d2\u0001\u0000\u0000\u0000\u00d3\u00d4\u0001\u0000\u0000\u0000\u00d4"+
-		"\u00d5\u0001\u0000\u0000\u0000\u00d5\u00d6\u0005/\u0000\u0000\u00d6)\u0001"+
-		"\u0000\u0000\u0000\u00d7\u00d8\u0003D\"\u0000\u00d8\u00da\u0005*\u0000"+
+		"\u00d5\u0001\u0000\u0000\u0000\u00d5\u00d6\u00050\u0000\u0000\u00d6)\u0001"+
+		"\u0000\u0000\u0000\u00d7\u00d8\u0003D\"\u0000\u00d8\u00da\u0005+\u0000"+
 		"\u0000\u00d9\u00db\u0003@ \u0000\u00da\u00d9\u0001\u0000\u0000\u0000\u00da"+
 		"\u00db\u0001\u0000\u0000\u0000\u00db\u00dc\u0001\u0000\u0000\u0000\u00dc"+
-		"\u00dd\u0005+\u0000\u0000\u00dd+\u0001\u0000\u0000\u0000\u00de\u00e0\u0003"+
-		"\u001e\u000f\u0000\u00df\u00e1\u00051\u0000\u0000\u00e0\u00df\u0001\u0000"+
+		"\u00dd\u0005,\u0000\u0000\u00dd+\u0001\u0000\u0000\u0000\u00de\u00e0\u0003"+
+		"\u001e\u000f\u0000\u00df\u00e1\u00052\u0000\u0000\u00e0\u00df\u0001\u0000"+
 		"\u0000\u0000\u00e0\u00e1\u0001\u0000\u0000\u0000\u00e1-\u0001\u0000\u0000"+
 		"\u0000\u00e2\u00e7\u00030\u0018\u0000\u00e3\u00e6\u00032\u0019\u0000\u00e4"+
 		"\u00e6\u00034\u001a\u0000\u00e5\u00e3\u0001\u0000\u0000\u0000\u00e5\u00e4"+
@@ -2545,41 +2547,41 @@ public class JimLangParser extends Parser {
 		"\u0000\u0000\u0000\u00e9\u00e7\u0001\u0000\u0000\u0000\u00ea\u00f4\u0003"+
 		"D\"\u0000\u00eb\u00f4\u0003B!\u0000\u00ec\u00f4\u0003<\u001e\u0000\u00ed"+
 		"\u00f4\u00036\u001b\u0000\u00ee\u00f4\u00038\u001c\u0000\u00ef\u00f0\u0005"+
-		"*\u0000\u0000\u00f0\u00f1\u0003\u001e\u000f\u0000\u00f1\u00f2\u0005+\u0000"+
+		"+\u0000\u0000\u00f0\u00f1\u0003\u001e\u000f\u0000\u00f1\u00f2\u0005,\u0000"+
 		"\u0000\u00f2\u00f4\u0001\u0000\u0000\u0000\u00f3\u00ea\u0001\u0000\u0000"+
 		"\u0000\u00f3\u00eb\u0001\u0000\u0000\u0000\u00f3\u00ec\u0001\u0000\u0000"+
 		"\u0000\u00f3\u00ed\u0001\u0000\u0000\u0000\u00f3\u00ee\u0001\u0000\u0000"+
 		"\u0000\u00f3\u00ef\u0001\u0000\u0000\u0000\u00f41\u0001\u0000\u0000\u0000"+
-		"\u00f5\u00f6\u0005,\u0000\u0000\u00f6\u00f7\u0003\u001e\u000f\u0000\u00f7"+
-		"\u00f8\u0005-\u0000\u0000\u00f8\u00fc\u0001\u0000\u0000\u0000\u00f9\u00fa"+
-		"\u0005!\u0000\u0000\u00fa\u00fc\u0003B!\u0000\u00fb\u00f5\u0001\u0000"+
+		"\u00f5\u00f6\u0005-\u0000\u0000\u00f6\u00f7\u0003\u001e\u000f\u0000\u00f7"+
+		"\u00f8\u0005.\u0000\u0000\u00f8\u00fc\u0001\u0000\u0000\u0000\u00f9\u00fa"+
+		"\u0005\"\u0000\u0000\u00fa\u00fc\u0003B!\u0000\u00fb\u00f5\u0001\u0000"+
 		"\u0000\u0000\u00fb\u00f9\u0001\u0000\u0000\u0000\u00fc3\u0001\u0000\u0000"+
-		"\u0000\u00fd\u00ff\u0005*\u0000\u0000\u00fe\u0100\u0003@ \u0000\u00ff"+
+		"\u0000\u00fd\u00ff\u0005+\u0000\u0000\u00fe\u0100\u0003@ \u0000\u00ff"+
 		"\u00fe\u0001\u0000\u0000\u0000\u00ff\u0100\u0001\u0000\u0000\u0000\u0100"+
-		"\u0101\u0001\u0000\u0000\u0000\u0101\u0102\u0005+\u0000\u0000\u01025\u0001"+
-		"\u0000\u0000\u0000\u0103\u010c\u0005,\u0000\u0000\u0104\u0109\u0003\u001e"+
-		"\u000f\u0000\u0105\u0106\u00050\u0000\u0000\u0106\u0108\u0003\u001e\u000f"+
+		"\u0101\u0001\u0000\u0000\u0000\u0101\u0102\u0005,\u0000\u0000\u01025\u0001"+
+		"\u0000\u0000\u0000\u0103\u010c\u0005-\u0000\u0000\u0104\u0109\u0003\u001e"+
+		"\u000f\u0000\u0105\u0106\u00051\u0000\u0000\u0106\u0108\u0003\u001e\u000f"+
 		"\u0000\u0107\u0105\u0001\u0000\u0000\u0000\u0108\u010b\u0001\u0000\u0000"+
 		"\u0000\u0109\u0107\u0001\u0000\u0000\u0000\u0109\u010a\u0001\u0000\u0000"+
 		"\u0000\u010a\u010d\u0001\u0000\u0000\u0000\u010b\u0109\u0001\u0000\u0000"+
 		"\u0000\u010c\u0104\u0001\u0000\u0000\u0000\u010c\u010d\u0001\u0000\u0000"+
-		"\u0000\u010d\u010e\u0001\u0000\u0000\u0000\u010e\u010f\u0005-\u0000\u0000"+
-		"\u010f7\u0001\u0000\u0000\u0000\u0110\u0119\u0005.\u0000\u0000\u0111\u0116"+
-		"\u0003:\u001d\u0000\u0112\u0113\u00050\u0000\u0000\u0113\u0115\u0003:"+
+		"\u0000\u010d\u010e\u0001\u0000\u0000\u0000\u010e\u010f\u0005.\u0000\u0000"+
+		"\u010f7\u0001\u0000\u0000\u0000\u0110\u0119\u0005/\u0000\u0000\u0111\u0116"+
+		"\u0003:\u001d\u0000\u0112\u0113\u00051\u0000\u0000\u0113\u0115\u0003:"+
 		"\u001d\u0000\u0114\u0112\u0001\u0000\u0000\u0000\u0115\u0118\u0001\u0000"+
 		"\u0000\u0000\u0116\u0114\u0001\u0000\u0000\u0000\u0116\u0117\u0001\u0000"+
 		"\u0000\u0000\u0117\u011a\u0001\u0000\u0000\u0000\u0118\u0116\u0001\u0000"+
 		"\u0000\u0000\u0119\u0111\u0001\u0000\u0000\u0000\u0119\u011a\u0001\u0000"+
-		"\u0000\u0000\u011a\u011b\u0001\u0000\u0000\u0000\u011b\u011c\u0005/\u0000"+
+		"\u0000\u0000\u011a\u011b\u0001\u0000\u0000\u0000\u011b\u011c\u00050\u0000"+
 		"\u0000\u011c9\u0001\u0000\u0000\u0000\u011d\u011e\u0003B!\u0000\u011e"+
-		"\u011f\u00052\u0000\u0000\u011f\u0120\u0003\u001e\u000f\u0000\u0120;\u0001"+
+		"\u011f\u00053\u0000\u0000\u011f\u0120\u0003\u001e\u000f\u0000\u0120;\u0001"+
 		"\u0000\u0000\u0000\u0121\u0122\u0007\u0000\u0000\u0000\u0122=\u0001\u0000"+
 		"\u0000\u0000\u0123\u0124\u0007\u0001\u0000\u0000\u0124?\u0001\u0000\u0000"+
-		"\u0000\u0125\u012a\u0003 \u0010\u0000\u0126\u0127\u00050\u0000\u0000\u0127"+
+		"\u0000\u0125\u012a\u0003 \u0010\u0000\u0126\u0127\u00051\u0000\u0000\u0127"+
 		"\u0129\u0003 \u0010\u0000\u0128\u0126\u0001\u0000\u0000\u0000\u0129\u012c"+
 		"\u0001\u0000\u0000\u0000\u012a\u0128\u0001\u0000\u0000\u0000\u012a\u012b"+
 		"\u0001\u0000\u0000\u0000\u012bA\u0001\u0000\u0000\u0000\u012c\u012a\u0001"+
-		"\u0000\u0000\u0000\u012d\u012e\u0005\u0017\u0000\u0000\u012eC\u0001\u0000"+
+		"\u0000\u0000\u0000\u012d\u012e\u0005\u0018\u0000\u0000\u012eC\u0001\u0000"+
 		"\u0000\u0000\u012f\u0130\u0007\u0002\u0000\u0000\u0130E\u0001\u0000\u0000"+
 		"\u0000\u0131\u013a\u0005\u0003\u0000\u0000\u0132\u013a\u0005\u0004\u0000"+
 		"\u0000\u0133\u013a\u0005\u0005\u0000\u0000\u0134\u013a\u0005\u0006\u0000"+
@@ -2589,8 +2591,8 @@ public class JimLangParser extends Parser {
 		"\u0001\u0000\u0000\u0000\u0139\u0134\u0001\u0000\u0000\u0000\u0139\u0135"+
 		"\u0001\u0000\u0000\u0000\u0139\u0136\u0001\u0000\u0000\u0000\u0139\u0137"+
 		"\u0001\u0000\u0000\u0000\u0139\u0138\u0001\u0000\u0000\u0000\u013aG\u0001"+
-		"\u0000\u0000\u0000\u013b\u0140\u0005\u0017\u0000\u0000\u013c\u013d\u0005"+
-		"!\u0000\u0000\u013d\u013f\u0005\u0017\u0000\u0000\u013e\u013c\u0001\u0000"+
+		"\u0000\u0000\u0000\u013b\u0140\u0005\u0018\u0000\u0000\u013c\u013d\u0005"+
+		"\"\u0000\u0000\u013d\u013f\u0005\u0018\u0000\u0000\u013e\u013c\u0001\u0000"+
 		"\u0000\u0000\u013f\u0142\u0001\u0000\u0000\u0000\u0140\u013e\u0001\u0000"+
 		"\u0000\u0000\u0140\u0141\u0001\u0000\u0000\u0000\u0141I\u0001\u0000\u0000"+
 		"\u0000\u0142\u0140\u0001\u0000\u0000\u0000$KY[agms|\u0087\u008b\u008f"+

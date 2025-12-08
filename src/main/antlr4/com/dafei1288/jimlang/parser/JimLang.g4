@@ -59,7 +59,7 @@ arrayLiteral: S_OPEN (expression (COMMA expression)*)? S_CLOSE ;
 objectLiteral: C_OPEN (pair (COMMA pair)*)? C_CLOSE ;
 pair: identifier COLON expression ;
 
-constVar : NUMBER_LITERAL | STRING_LITERAL | BOOLEAN_LITERAL ;
+constVar : NUMBER_LITERAL | STRING_LITERAL | ML_STRING_LITERAL | BOOLEAN_LITERAL ;
 
 binOP : ADD | SUB | MUL | DIV | GT | GE | LT | LE | EQ | NE | AND | OR ;
 
@@ -83,8 +83,11 @@ BREAK                               : 'break';
 CONTINUE                            : 'continue';
 BOOLEAN_LITERAL                     : 'true' | 'false' ;
 
-STRING_LITERAL: '"' (~["\r\n])* '"';
-NUMBER_LITERAL: [0-9]+ ('.' [0-9]+)?;
+	STRING_LITERAL: '"' (~["\r\n])* '"';
+	fragment SQ: '\'';
+	ML_STRING_LITERAL: SQ SQ SQ ( . | '\r' | '\n' )*? SQ SQ SQ;
+
+	NUMBER_LITERAL: [0-9]+ ('.' [0-9]+)?;
 
 ID  :   [a-zA-Z_][a-zA-Z0-9_]*;
 

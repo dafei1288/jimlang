@@ -149,24 +149,28 @@ return new RuntimeException(sb.toString());
 
     @Override
     public Object visitConstVar(JimLangParser.ConstVarContext ctx) {
-        if(ctx.NUMBER_LITERAL() != null){
-            String numText = ctx.NUMBER_LITERAL().getText().trim();
-            if(numText.contains(".")){
-                return Double.parseDouble(numText);
-            }else{
-                return Integer.parseInt(numText);
-            }
-        }else if(ctx.STRING_LITERAL() != null){
-            String text = ctx.STRING_LITERAL().getText();
-            if(text.startsWith("\"")){
-                text = text.substring(1,text.length()-1);
-            }
-            return text;
-        }else if(ctx.BOOLEAN_LITERAL() != null){
-            return Boolean.valueOf(ctx.BOOLEAN_LITERAL().getText().trim());
+    if(ctx.NUMBER_LITERAL() != null){
+        String numText = ctx.NUMBER_LITERAL().getText().trim();
+        if(numText.contains(".")){
+            return Double.parseDouble(numText);
+        }else{
+            return Integer.parseInt(numText);
         }
-        return super.visitConstVar(ctx);
+    }else if(ctx.STRING_LITERAL() != null){
+        String text = ctx.STRING_LITERAL().getText();
+        if(text.startsWith("\"")){
+            text = text.substring(1,text.length()-1);
+        }
+        return text;
+    }else if(ctx.ML_STRING_LITERAL() != null){
+        String raw = ctx.ML_STRING_LITERAL().getText();
+        if (raw.startsWith("'''")) { raw = raw.substring(3, raw.length()-3); }
+        return raw;
+    }else if(ctx.BOOLEAN_LITERAL() != null){
+        return Boolean.valueOf(ctx.BOOLEAN_LITERAL().getText().trim());
     }
+    return super.visitConstVar(ctx);
+}
 
     @Override
     public Object visitSingleExpression(SingleExpressionContext ctx) {
