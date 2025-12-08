@@ -82,3 +82,5 @@ test-output/
 *.hprof
 
 .claude
+
+.env**

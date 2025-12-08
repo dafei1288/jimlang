@@ -25,6 +25,13 @@
     <maven.compiler.target>21</maven.compiler.target>
   </properties>
   <dependencies>
+      <dependency>
+          <artifactId>jdbc</artifactId>
+          <version>1.0-SNAPSHOT</version>
+          <groupId>com.dafei1288.jimsql</groupId>
+          <scope>system</scope>
+          <systemPath>${project.basedir}/ext/jdbc-1.0.0-SNAPSHOT.jar</systemPath>
+      </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

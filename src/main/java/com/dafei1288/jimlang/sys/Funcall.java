@@ -78,6 +78,14 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("REDIRECT");
     SYS_FUNCTION_NAMES.add("SEND_JSON");
     SYS_FUNCTION_NAMES.add("SET_HEADER");
+    // db
+    SYS_FUNCTION_NAMES.add("DB_OPEN");
+    SYS_FUNCTION_NAMES.add("DB_CLOSE");
+    SYS_FUNCTION_NAMES.add("DB_EXEC");
+    SYS_FUNCTION_NAMES.add("DB_QUERY");
+    SYS_FUNCTION_NAMES.add("WITH_CONN");
+    SYS_FUNCTION_NAMES.add("DB_TX");
+    SYS_FUNCTION_NAMES.add("DB_QUERY_STREAM");
   }
 
   public static boolean isSysFunction(String functionName){
@@ -1420,7 +1428,215 @@ public class Funcall {
         return respBody;
       }
     }catch(Exception e){ throw new RuntimeException(e); }
-  }private static boolean hasMethod(String name){
+  }
+  // ------------- built-ins: Database (JDBC) -------------
+  private static final java.util.Map<String,Object> DBS = new java.util.concurrent.ConcurrentHashMap<>();
+  private static class SimpleDS implements AutoCloseable {
+    final String url; final String user; final String pass; final String driver;
+    SimpleDS(String url, String user, String pass, String driver){ this.url=url; this.user=user; this.pass=pass; this.driver=driver; }
+    java.sql.Connection get() throws java.sql.SQLException {
+      try{ if (driver != null && !driver.isEmpty()) Class.forName(driver); } catch(Throwable ignore){}
+      if (user != null) return java.sql.DriverManager.getConnection(url, user, pass);
+      return java.sql.DriverManager.getConnection(url);
+    }
+    public void close(){}
+  }
+  private static class HikariRef implements AutoCloseable {
+    final Object ds; final java.lang.reflect.Method getConn; final java.lang.reflect.Method closeM;
+    HikariRef(Object ds, java.lang.reflect.Method getConn, java.lang.reflect.Method closeM){ this.ds=ds; this.getConn=getConn; this.closeM=closeM; }
+    java.sql.Connection get() throws Exception { return (java.sql.Connection) getConn.invoke(ds); }
+    public void close(){ try{ if (closeM!=null) closeM.invoke(ds); }catch(Throwable ignore){} }
+  }
+  @SuppressWarnings({"rawtypes"})
+  private static Object makeDataSource(java.util.Map cfg){
+    String url = String.valueOf(cfg.getOrDefault("url",""));
+    String user = cfg.containsKey("user") ? String.valueOf(cfg.get("user")) : null;
+    String password = cfg.containsKey("password") ? String.valueOf(cfg.get("password")) : null;
+    String driver = cfg.containsKey("driver") ? String.valueOf(cfg.get("driver")) : null;
+    boolean pool = parseBool(cfg.get("pool"), false);
+    String v;
+    if (url==null || url.isEmpty()){ v = firstEnv("DB_URL"); if (v!=null) url = v; }
+    if (user==null || user.isEmpty()){ v = firstEnv("DB_USER"); if (v!=null) user = v; }
+    if (password==null || password.isEmpty()){ v = firstEnv("DB_PASSWORD"); if (v!=null) password = v; }
+    if (driver==null || driver.isEmpty()){ v = firstEnv("DB_DRIVER"); if (v!=null) driver = v; }
+    if (url==null || url.isEmpty()) throw new RuntimeException("db_open: missing url");
+    if (pool){
+      try{
+        Class<?> hkClz = Class.forName("com.zaxxer.hikari.HikariDataSource");
+        Object hk = hkClz.getConstructor().newInstance();
+        try{ hkClz.getMethod("setJdbcUrl", String.class).invoke(hk, url); }catch(Throwable ignore){}
+        try{ if (user!=null) hkClz.getMethod("setUsername", String.class).invoke(hk, user); }catch(Throwable ignore){}
+        try{ if (password!=null) hkClz.getMethod("setPassword", String.class).invoke(hk, password); }catch(Throwable ignore){}
+        try{ if (driver!=null) hkClz.getMethod("setDriverClassName", String.class).invoke(hk, driver); }catch(Throwable ignore){}
+        try{ Object vMax = cfg.get("max_pool"); if (vMax!=null) hkClz.getMethod("setMaximumPoolSize", int.class).invoke(hk, asInt(vMax)); }catch(Throwable ignore){}
+        try{ Object vMin = cfg.get("min_idle"); if (vMin!=null) hkClz.getMethod("setMinimumIdle", int.class).invoke(hk, asInt(vMin)); }catch(Throwable ignore){}
+        try{ Object vTo = cfg.get("conn_timeout"); if (vTo!=null) hkClz.getMethod("setConnectionTimeout", long.class).invoke(hk, Long.valueOf(String.valueOf(vTo))); }catch(Throwable ignore){}
+        java.lang.reflect.Method getConn = hkClz.getMethod("getConnection");
+        java.lang.reflect.Method closeM = hkClz.getMethod("close");
+        return new HikariRef(hk, getConn, closeM);
+      }catch(Throwable ignore){ }
+    }
+    return new SimpleDS(url, user, password, driver);
+  }
+  private static java.sql.Connection acquire(Object nameOrCfg) throws Exception {
+    if (nameOrCfg instanceof java.util.Map){ Object ds = makeDataSource((java.util.Map)nameOrCfg); if (ds instanceof HikariRef) return ((HikariRef)ds).get(); else return ((SimpleDS)ds).get(); }
+    String name = (nameOrCfg==null) ? "main" : String.valueOf(nameOrCfg);
+    Object ds = DBS.get(name);
+    if (ds == null) {
+      java.util.LinkedHashMap<String,Object> cfg = new java.util.LinkedHashMap<>();
+      String url = firstEnv("DB_URL"); if (url != null) cfg.put("url", url);
+      String user = firstEnv("DB_USER"); if (user != null) cfg.put("user", user);
+      String pw = firstEnv("DB_PASSWORD"); if (pw != null) cfg.put("password", pw);
+      String drv = firstEnv("DB_DRIVER"); if (drv != null) cfg.put("driver", drv);
+      if (!cfg.isEmpty()) { Object d = makeDataSource(cfg); DBS.put("main", d); ds = d; }
+    }
+    if (ds == null) throw new RuntimeException("db acquire failed: unknown datasource '" + name + "'");
+    if (ds instanceof HikariRef) return ((HikariRef)ds).get();
+    if (ds instanceof SimpleDS) return ((SimpleDS)ds).get();
+    try{ return (java.sql.Connection) ds.getClass().getMethod("getConnection").invoke(ds); }catch(Throwable e){ throw new RuntimeException(e); }
+  }
+  private static void closeDs(Object ds){ try{ if (ds instanceof AutoCloseable) ((AutoCloseable)ds).close(); else { try{ ds.getClass().getMethod("close").invoke(ds); }catch(Throwable ignore){} } }catch(Throwable ignore){} }
+  public Boolean db_open(Object cfg){ return db_open("main", cfg); }
+  @SuppressWarnings({"rawtypes"})
+  public Boolean db_open(Object name, Object cfg){
+    String n = (name==null||String.valueOf(name).isEmpty()) ? "main" : String.valueOf(name);
+    if (!(cfg instanceof java.util.Map)) throw new RuntimeException("db_open: cfg must be object");
+    Object ds = makeDataSource((java.util.Map)cfg);
+    Object old = DBS.put(n, ds);
+    if (old != null) closeDs(old);
+    return Boolean.TRUE;
+  }
+  public Boolean db_close(Object name){
+    String n = (name==null||String.valueOf(name).isEmpty()) ? "main" : String.valueOf(name);
+    Object ds = DBS.remove(n); if (ds != null) { closeDs(ds); return Boolean.TRUE; }
+    return Boolean.FALSE;
+  }
+  private static class DBConn { final java.sql.Connection c; DBConn(java.sql.Connection c){ this.c=c; } }
+  public Object with_conn(Object nameOrCfg, Object fn){
+    try { java.sql.Connection c = acquire(nameOrCfg);
+      try { com.dafei1288.jimlang.JimLangVistor v = com.dafei1288.jimlang.Host.current(); if (v == null) throw new RuntimeException("with_conn must be called from script context");
+        return v.callFromHost(fn, java.util.Arrays.asList(new DBConn(c)));
+      } finally { try{ c.close(); }catch(Throwable ignore){} }
+    } catch (Exception e){ throw new RuntimeException(e); }
+  }
+  public Object db_tx(Object nameOrCfg, Object fn){
+    try { java.sql.Connection c = acquire(nameOrCfg); boolean old = c.getAutoCommit(); c.setAutoCommit(false);
+      try { com.dafei1288.jimlang.JimLangVistor v = com.dafei1288.jimlang.Host.current(); if (v == null) throw new RuntimeException("db_tx must be called from script context");
+        Object r = v.callFromHost(fn, java.util.Arrays.asList(new DBConn(c))); c.commit(); return r;
+      } catch (Throwable ex){ try{ c.rollback(); }catch(Throwable ignore){} throw ex; }
+      finally { try{ c.setAutoCommit(old); c.close(); }catch(Throwable ignore){} }
+    } catch (Exception e){ throw new RuntimeException(e); }
+  }
+  private static class SqlAndParams { final String sql; final java.util.List<Object> params; SqlAndParams(String s, java.util.List<Object> p){ sql=s; params=p; } }
+  @SuppressWarnings({"rawtypes"})
+  private static SqlAndParams prepareSql(String sql, Object params){
+    if (params == null) return new SqlAndParams(sql, new java.util.ArrayList<>());
+    if (params instanceof java.util.List) return new SqlAndParams(sql, new java.util.ArrayList<>((java.util.List)params));
+    if (params instanceof java.util.Map){
+      java.util.Map m = (java.util.Map) params;
+      StringBuilder out = new StringBuilder(); java.util.ArrayList<Object> bound = new java.util.ArrayList<>();
+      boolean inS=false, inD=false; int i=0; while(i<sql.length()){
+        char ch = sql.charAt(i);
+        if (ch=='\'' && !inD){ inS = !inS; out.append(ch); i++; continue; }
+        if (ch=='"' && !inS){ inD = !inD; out.append(ch); i++; continue; }
+        if (!inS && !inD && ch==':' && (i+1)<sql.length() && sql.charAt(i+1)!=':'){
+          int j=i+1; while(j<sql.length()){
+            char c2 = sql.charAt(j);
+            if (Character.isLetterOrDigit(c2) || c2=='_') j++; else break;
+          }
+          if (j>(i+1)){
+            String name = sql.substring(i+1, j); Object val = m.get(name);
+            if (val instanceof java.util.List){ java.util.List arr = (java.util.List)val; if (arr.isEmpty()){ out.append("NULL"); } else { out.append('('); for (int k=0;k<arr.size();k++){ if(k>0) out.append(','); out.append('?'); bound.add(arr.get(k)); } out.append(')'); } }
+            else if (val != null && val.getClass().isArray()){ int len = java.lang.reflect.Array.getLength(val); if (len==0){ out.append("NULL"); } else { out.append('('); for (int k=0;k<len;k++){ if(k>0) out.append(','); out.append('?'); bound.add(java.lang.reflect.Array.get(val, k)); } out.append(')'); } }
+            else { out.append('?'); bound.add(val); }
+            i = j; continue;
+          }
+        }
+        out.append(ch); i++;
+      }
+      return new SqlAndParams(out.toString(), bound);
+    }
+    java.util.ArrayList<Object> one = new java.util.ArrayList<>(); one.add(params); return new SqlAndParams(sql, one);
+  }
+  private static void bindParams(java.sql.PreparedStatement ps, java.util.List<Object> params) throws java.sql.SQLException {
+    if (params == null) return; int i=1; for (Object p : params){
+      if (p == null) { ps.setObject(i++, null); continue; }
+      if (p instanceof Boolean) { ps.setBoolean(i++, (Boolean)p); continue; }
+      if (p instanceof Integer) { ps.setInt(i++, (Integer)p); continue; }
+      if (p instanceof Long) { ps.setLong(i++, (Long)p); continue; }
+      if (p instanceof Double || p instanceof Float) { ps.setDouble(i++, ((Number)p).doubleValue()); continue; }
+      if (p instanceof byte[]) { ps.setBytes(i++, (byte[])p); continue; }
+      ps.setObject(i++, p);
+    } }
+  private static java.util.Map<String,Object> rowMap(java.sql.ResultSet rs) throws java.sql.SQLException {
+    java.util.LinkedHashMap<String,Object> m = new java.util.LinkedHashMap<>();
+    java.sql.ResultSetMetaData md = rs.getMetaData(); int n = md.getColumnCount();
+    for (int i=1;i<=n;i++){
+      String key = md.getColumnLabel(i); if (key==null||key.isEmpty()) key = md.getColumnName(i);
+      Object v = rs.getObject(i);
+      if (v instanceof java.math.BigDecimal) v = v.toString();
+      else if (v instanceof java.sql.Timestamp) v = v.toString();
+      else if (v instanceof java.sql.Date) v = v.toString();
+      else if (v instanceof java.sql.Time) v = v.toString();
+      m.put(key, v);
+    }
+    return m;
+  }
+  private static boolean dbDebug(){ try{ return parseBool(firstEnv("DB_DEBUG"), false); }catch(Throwable __){ return false; } }
+  public Object db_exec(Object target, Object sql){ return db_exec(target, sql, null); }
+  public Object db_exec(Object target, Object sql, Object params){
+    String q = asString(sql);
+    SqlAndParams sp = (params instanceof java.util.Map || params instanceof java.util.List) ? prepareSql(q, params) : new SqlAndParams(q, (params==null?new java.util.ArrayList<>() : (params instanceof java.util.List ? new java.util.ArrayList<>((java.util.List)params): new java.util.ArrayList<>(java.util.Arrays.asList(params)))));
+    boolean debug = dbDebug(); long t0 = System.currentTimeMillis();
+    try (java.sql.Connection c = (target instanceof DBConn) ? ((DBConn)target).c : acquire(target);
+         java.sql.PreparedStatement ps = c.prepareStatement(sp.sql)){
+      bindParams(ps, sp.params);
+      int n = ps.executeUpdate();
+      if (debug){ System.out.println("[db_exec] sql="+sp.sql+" params="+sp.params+" took="+(System.currentTimeMillis()-t0)+"ms"); }
+      return Integer.valueOf(n);
+    } catch (Exception e){ throw new RuntimeException(e); }
+  }
+  public Object db_query(Object target, Object sql){ return db_query(target, sql, null); }
+  public Object db_query(Object target, Object sql, Object params){
+    String q = asString(sql);
+    SqlAndParams sp = (params instanceof java.util.Map || params instanceof java.util.List) ? prepareSql(q, params) : new SqlAndParams(q, (params==null?new java.util.ArrayList<>() : (params instanceof java.util.List ? new java.util.ArrayList<>((java.util.List)params): new java.util.ArrayList<>(java.util.Arrays.asList(params)))));
+    boolean debug = dbDebug(); long t0 = System.currentTimeMillis();
+    java.util.ArrayList<java.util.Map<String,Object>> rows = new java.util.ArrayList<>();
+    try (java.sql.Connection c = (target instanceof DBConn) ? ((DBConn)target).c : acquire(target);
+         java.sql.PreparedStatement ps = c.prepareStatement(sp.sql)){
+      bindParams(ps, sp.params);
+      try (java.sql.ResultSet rs = ps.executeQuery()){
+        while (rs.next()) rows.add(rowMap(rs));
+      }
+      if (debug){ System.out.println("[db_query] sql="+sp.sql+" params="+sp.params+" rows="+rows.size()+" took="+(System.currentTimeMillis()-t0)+"ms"); }
+      return rows;
+    } catch (Exception e){ throw new RuntimeException(e); }
+  }
+  @SuppressWarnings({"rawtypes"})
+  public Object db_query_stream(Object target, Object sql, Object opts){
+    if (!(opts instanceof java.util.Map)) throw new RuntimeException("db_query_stream: opts must be object with on_row and optional params/fetch_size");
+    java.util.Map m = (java.util.Map) opts;
+    Object onRow = m.get("on_row"); Object p = m.get("params"); int fetch = m.containsKey("fetch_size") ? asInt(m.get("fetch_size")) : 0;
+    String q = asString(sql);
+    SqlAndParams sp = (p instanceof java.util.Map || p instanceof java.util.List) ? prepareSql(q, p) : new SqlAndParams(q, (p==null?new java.util.ArrayList<>() : (p instanceof java.util.List ? new java.util.ArrayList<>((java.util.List)p): new java.util.ArrayList<>(java.util.Arrays.asList(p)))));
+    boolean debug = dbDebug(); long t0 = System.currentTimeMillis(); int count=0;
+    com.dafei1288.jimlang.JimLangVistor v = com.dafei1288.jimlang.Host.current(); if (v == null) throw new RuntimeException("db_query_stream must be called from script context");
+    try (java.sql.Connection c = (target instanceof DBConn) ? ((DBConn)target).c : acquire(target);
+         java.sql.PreparedStatement ps = c.prepareStatement(sp.sql)){
+      if (fetch>0) try { ps.setFetchSize(fetch); } catch(Throwable ignore){}
+      bindParams(ps, sp.params);
+      try (java.sql.ResultSet rs = ps.executeQuery()){
+        while (rs.next()){
+          java.util.Map<String,Object> row = rowMap(rs);
+          if (onRow != null) v.callFromHost(onRow, java.util.Arrays.asList(row));
+          count++;
+        }
+      }
+      if (debug){ System.out.println("[db_query_stream] sql="+sp.sql+" params="+sp.params+" rows="+count+" took="+(System.currentTimeMillis()-t0)+"ms"); }
+      return Integer.valueOf(count);
+    } catch (Exception e){ throw new RuntimeException(e); }
+  }
+private static boolean hasMethod(String name){
     if (name == null) return false;
     for (Method m : new Funcall().getClass().getMethods()){
       if (m.getName().equalsIgnoreCase(name)) return true;

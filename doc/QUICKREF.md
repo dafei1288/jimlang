@@ -256,3 +256,21 @@ $code | bin\jimlang.cmd -
 ```
 - 注意：在 overrides 对象里，'print' 是关键字，推荐使用 stream_print 代替（与 print 等效）。
 - 示例：examples/llm_on_token_demo.jim（stream_print:false + on_token 回调演示）
+
+## Database (JDBC)
+- 基本函数：
+  - db_open(name, { url, user, password, driver, pool, max_pool, min_idle, conn_timeout }) -> true
+  - db_close(name) -> true/false
+  - db_exec(target, sql[, params]) -> int（更新条数）
+  - db_query(target, sql[, params]) -> array<map>
+  - db_query_stream(target, sql, { params, on_row: fn, fetch_size }) -> int（行数）
+  - with_conn(nameOrCfg, fn(conn))：获取连接传给 fn，结束后自动关闭
+  - db_tx(nameOrCfg, fn(conn))：事务内执行 fn，出错自动回滚，结束自动提交并关闭
+- 参数绑定：
+  - 支持位置参数 `?`（传入数组），支持命名参数 `:name`（传入对象），数组会展开成 (?, ?, ?) 以便 `IN (:ids)`
+- 结果映射：每行 map（列名使用 label），null 保持为 null，数值为 number，decimal->string，日期/时间 toString()
+- 调试：`DB_DEBUG=1` 打印 sql/params/耗时
+- JimSQL 示例：
+  - driver: `com.dafei1288.jimsql.jdbc.JqDriver`
+  - url: `jdbc:jimsql://localhost:8821/test`
+  - 示例脚本：`examples/db_jimsql_demo.jim`
