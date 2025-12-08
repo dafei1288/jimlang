@@ -1189,7 +1189,7 @@ public class Funcall {
     double temp = parseDouble(cfg.get("temperature"), 0.2);
     boolean stream = parseBool(cfg.get("stream"), false);
     boolean debug = false; try { debug = parseBool(firstEnv("LLM_DEBUG","DEBUG"), false); } catch(Exception __) {}
-    boolean thinking = parseBool(cfg.get("thinking"), false);    boolean printTokens = parseBool(cfg.get("print"), true);
+    boolean thinking = parseBool(cfg.get("thinking"), false);    boolean printTokens = parseBool(cfg.get("print"), true); if (cfg.containsKey("stream_print")) printTokens = parseBool(cfg.get("stream_print"), printTokens);
     Object onToken = cfg.get("on_token");
     // try LangChain4j (non-stream) if available
     try {
