@@ -1066,7 +1066,61 @@ public class Funcall {
   }
   public Boolean yml_dump(Object v, Object path, Object indent){
     return file_write(path, yml_encode(v, indent));
-  }private static boolean hasMethod(String name){
+  }
+  // ------------- built-ins: environment -------------
+  private static final java.util.Map<String,String> ENV_OVERLAY = new java.util.concurrent.ConcurrentHashMap<>();
+  private static boolean asBool(Object o){
+    if (o == null) return false;
+    if (o instanceof Boolean) return (Boolean)o;
+    String s = String.valueOf(o).trim().toLowerCase(java.util.Locale.ROOT);
+    return s.equals("1") || s.equals("true") || s.equals("yes") || s.equals("y") || s.equals("on");
+  }
+  public Object env_get(Object name){
+    String key = String.valueOf(name);
+    if (ENV_OVERLAY.containsKey(key)) return ENV_OVERLAY.get(key);
+    return System.getenv(key);
+  }
+  public Object env_get(Object name, Object def){
+    Object v = env_get(name);
+    return (v == null) ? def : v;
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object env_all(){
+    java.util.LinkedHashMap m = new java.util.LinkedHashMap();
+    for (java.util.Map.Entry<String,String> e : ENV_OVERLAY.entrySet()) { m.put(e.getKey(), e.getValue()); }
+    for (java.util.Map.Entry<String,String> e : System.getenv().entrySet()) { if (!m.containsKey(e.getKey())) m.put(e.getKey(), e.getValue()); }
+    return m;
+  }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object load_env(Object path){ return load_env(path, Boolean.FALSE); }
+  @SuppressWarnings({"rawtypes","unchecked"})
+  public Object load_env(Object path, Object override){
+    String pth = asString(path);
+    java.util.LinkedHashMap m = new java.util.LinkedHashMap();
+    try{
+      java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get(pth), java.nio.charset.StandardCharsets.UTF_8);
+      for (String rawLine : lines){
+        String line = rawLine.trim();
+        if (line.isEmpty()) continue;
+        if (line.startsWith("#")) continue;
+        if (line.startsWith("export ")) line = line.substring(7).trim();
+        int eq = line.indexOf('=');
+        if (eq <= 0) continue;
+        String key = line.substring(0, eq).trim();
+        String val = line.substring(eq+1).trim();
+        if (val.length() >= 2){
+          char a = val.charAt(0), b = val.charAt(val.length()-1);
+          if ((a=='"' && b=='"') || (a=='\'' && b=='\'')) val = val.substring(1, val.length()-1);
+        }
+        m.put(key, val);
+      }
+    }catch(IOException e){ throw new RuntimeException(e); }
+    if (asBool(override)){
+      for (Object k : m.keySet()) ENV_OVERLAY.put(String.valueOf(k), String.valueOf(m.get(k)));
+    }
+    return m;
+  }
+private static boolean hasMethod(String name){
     if (name == null) return false;
     for (Method m : new Funcall().getClass().getMethods()){
       if (m.getName().equalsIgnoreCase(name)) return true;
