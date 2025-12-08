@@ -224,4 +224,4 @@ start_webserver(8082,
   "/static/*",  "GET", file
 )
 ```
-示例项目：examples/web_app（完整 Web 应用演示）
+示例项目：examples/web_app（完整 Web 应用演示）- 端口可从环境变量读取：先 load_env(".env", true)；再用 env_get("PORT", 8080)。

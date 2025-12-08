@@ -1,0 +1,12 @@
+// List some environment variables using env_all()
+// Optional: overlay with .env first
+// load_env("examples/env/.env", true)
+
+var all = env_all()
+println(typeof(all))  // object
+
+var ks = keys(all)
+for (var i = 0; i < len(ks) && i < 5; i = i + 1) {
+  var k = ks[i]
+  println(k + "=" + all[k])
+}
