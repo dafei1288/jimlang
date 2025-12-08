@@ -1,16 +1,17 @@
 // JimLang Web App example
 function home(req){
-  var html = "<h1>JimLang Web App</h1>"
-    + "<ul>"
-    + "<li><a href='/api/ping'>GET /api/ping</a></li>"
-    + "<li>POST /api/echo</li>"
-    + "<li><a href='/users/42'>GET /users/:id</a></li>"
-    + "<li><a href='/static/hello.txt'>GET /static/* (serve file)</a></li>"
-    + "<li><a href='/file'>GET /file (single file)</a></li>"
-    + "<li><a href='/download'>GET /download (attachment)</a></li>"
-    + "<li><a href='/login'>GET /login (set cookie)</a></li>"
-    + "<li><a href='/me'>GET /me (read cookie)</a></li>"
-    + "</ul>";
+  var html = '''
+<h1>JimLang Web App</h1>
+<ul>
+<li><a href='/api/ping'>GET /api/ping</a></li>
+<li>POST /api/echo</li>
+<li><a href='/users/42'>GET /users/:id</a></li>
+<li><a href='/static/hello.txt'>GET /static/* (serve file)</a></li>
+<li><a href='/file'>GET /file (single file)</a></li>
+<li><a href='/download'>GET /download (attachment)</a></li>
+<li><a href='/login'>GET /login (set cookie)</a></li>
+<li><a href='/me'>GET /me (read cookie)</a></li>
+</ul>''' ;
   return send_html(html);
 }
 function ping(req){ return send_text("pong") }
