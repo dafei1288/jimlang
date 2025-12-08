@@ -113,4 +113,5 @@ start_webserver(8080, "/api/ping", "GET", api)
 - 文件与下载：`send_file/attachment_file`；字节：`file_read_bytes`
 
 详见：`doc/QUICKREF.md`（Web）
-- examples/web_app：完整 Web 应用（路由/静态/Cookie/下载）
+- examples/web_app
+- examples/env/web_port.jim：读取 .env 中的 PORT、GREETING：完整 Web 应用（路由/静态/Cookie/下载）
