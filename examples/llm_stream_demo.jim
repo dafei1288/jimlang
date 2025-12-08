@@ -3,4 +3,5 @@
 // ask_llm will print streaming output itself when stream=true.
 
 // Use overrides to enable streaming
-ask_llm("用一句话描述春天", { stream: true, temperature: 0.2 })
+load_env(".env_llm")
+print(ask_llm("用一句话描述春天", { stream: true, temperature: 0.2 }))
