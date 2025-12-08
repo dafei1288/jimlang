@@ -111,7 +111,9 @@ var ox = json_load("tmp.json")
 yml_dump(o, "tmp.yml", 2)
 // var oy = yml_load("tmp.yml")  // requires SnakeYAML
 ```
-## First-class functions
+
+## Strings
+- Triple-quoted multi-line strings: ''' ... ''' (preserves newlines/whitespace). See doc/QUICKREF.md.## First-class functions
 
 > Note: sysfunctions are also first-class values. You can assign and call them:
 ```jim

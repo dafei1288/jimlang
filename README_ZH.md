@@ -93,7 +93,9 @@ println( d(2, 3) )
 var p = println
 p("ok")
 ```
-## 内置 Web 服务
+
+## 字符串
+- 支持三引号多行字符串：''' ... '''（保留换行与空白）。详见 doc/QUICKREF.md。## 内置 Web 服务
 ```jim
 function api(req){ return { ok: true } }
 start_webserver(8080, "/api/ping", "GET", api)
