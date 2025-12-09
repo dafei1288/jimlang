@@ -3,12 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>JimLang - JVM 脚本语言 · REPL · JSR-223 · dev snapshot</title>
-  <meta name="description" content="JimLang: 基于 JVM 的轻量脚本语言。控制流 if/while/for，数组/对象，标准库（字符串/数学/文件），REPL，JSR-223。" />
-  
+  <title>JimLang - JVM 脚本语言 · REPL · Web · LLM · DB · dev snapshot</title>
+  <meta name="description" content="JimLang: 基于 JVM 的轻量脚本语言。REPL/CLI，Web 服务器，JSON/YAML，环境变量，LLM（流式），JDBC 数据库，JSR-223 嵌入。" />
   <link rel="stylesheet" href="assets/styles.css" />
   <style>
-    /* Theme toggle: solid icons; show sun on light, moon on dark */
     .btn.theme-toggle{border:0;background:transparent;padding:8px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;line-height:1;color:var(--fg)}
     .btn.theme-toggle:hover{background:rgba(255,255,255,0.10)}
     html[data-theme="light"] .btn.theme-toggle:hover{background:rgba(0,0,0,0.06)}
@@ -17,7 +15,6 @@
     html[data-theme="light"] .btn.theme-toggle .moon{display:none}
     html[data-theme="dark"] .btn.theme-toggle .sun{display:none}
     html[data-theme="dark"] .btn.theme-toggle .moon{display:block}
-    /* Enlarge navbar logo for better legibility */
     .brand .logo-img{height:56px !important}
   </style>
   <style>@media (max-width:720px){ .brand .logo-img{ height:56px !important } }</style>
@@ -34,7 +31,8 @@
       <a href="#syntax">语法速览</a>
       <a href="#examples">示例</a>
       <a href="#cli">命令行</a>
-      <a href="#build">构建与测试</a>
+      <a href="#db">数据库</a>
+      <a href="#build">构建</a>
       <a href="#roadmap">路线图</a>
     </nav>
     <button id="themeToggle" class="btn theme-toggle" aria-label="切换主题" title="切换主题">
@@ -59,14 +57,13 @@
         <circle cx="12" cy="12" r="8" fill="currentColor" mask="url(#moon-mask)" />
       </svg>
     </button>
-    
   </header>
 
   <main>
     <section class="hero container" id="top">
       <h1 class="title gradient-text">JimLang</h1>
-      <p class="subtitle">基于 JVM 的轻量脚本语言，适合学习语言实现与脚本开发。</p>
-      <p class="subtext">REPL · JSR-223 · if/while/for · 数组/对象 · 标准库（字符串/数学/文件） · dev snapshot</p>
+      <p class="subtitle">基于 JVM 的轻量脚本语言，适合脚本开发与语言实现学习。</p>
+      <p class="subtext">REPL/CLI · Web Server · JSON/YAML · Env/LLM（流式）· JDBC/DB · 委托/回调 · 错误栈/插^标</p>
       <div class="cta">
         <a class="btn primary" href="#quickstart">快速开始</a>
         <a class="btn" href="#features">查看特性</a>
@@ -77,168 +74,137 @@
     <section class="container" id="features">
       <h2>核心特性</h2>
       <div class="grid">
-        <div class="card glass">
-          <div class="icon">🔁</div>
-          <h3>控制流与表达式</h3>
-          <p>if/else，while，for，break/continue；算术/比较。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">📦</div>
-          <h3>数组与对象</h3>
-          <p>字面量；索引/属性访问；<code>length</code> 可读。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">📚</div>
-          <h3>标准库</h3>
-          <p>字符串、数学、文件 I/O。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">💬</div>
-          <h3>REPL 与 JSR-223</h3>
-          <p>可嵌入 Java；ScriptEngine 运行。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">🧩</div>
-          <h3>ANTLR4 + Maven</h3>
-          <p>ANTLR4 语法；Maven 构建；Java 21+。</p>
-        </div>
-        <div class="card glass">
-          <div class="icon">🖥️</div>
-          <h3>跨平台 CLI</h3>
-          <p>Windows/Unix 启动脚本。</p>
-        </div>
+        <div class="card glass"><div class="icon">🔁</div><h3>控制流与表达式</h3><p>if/else，while，for，break/continue；算术/比较，短路 &&/||。</p></div>
+        <div class="card glass"><div class="icon">📦</div><h3>数组与对象</h3><p>字面量；索引/属性访问；<code>length</code>；<code>{}</code> 对象。</p></div>
+        <div class="card glass"><div class="icon">📚</div><h3>标准库</h3><p>字符串/数学/文件；三引号多行字符串 <code>'''...'''</code>。</p></div>
+        <div class="card glass"><div class="icon">🕸️</div><h3>内置 Web</h3><p>route/start_webserver；send_text/html/json、cookie、下载、静态文件。</p></div>
+        <div class="card glass"><div class="icon">🔗</div><h3>JSON / YAML / Env</h3><p>json_encode/decode，yml_*，load_env/env_get 覆盖层。</p></div>
+        <div class="card glass"><div class="icon">🧠</div><h3>LLM 集成</h3><p>ask_llm（流式 SSE/LC4J），<code>on_token</code> 回调，<code>LLM_DEBUG</code> 调试。</p></div>
+        <div class="card glass"><div class="icon">🗄️</div><h3>数据库 JDBC</h3><p>db_open/query/exec/tx/with_conn，命名参数 <code>:name</code>，JimSQL。</p></div>
+        <div class="card glass"><div class="icon">🖥️</div><h3>跨平台 CLI</h3><p>--cli/-i、--eval/-e、--trace、STDIN；/ext 外部 JAR。</p></div>
       </div>
     </section>
 
     <section class="container" id="quickstart">
       <h2>快速开始</h2>
       <div class="grid code-grid">
-        <div class="card glass">
-          <h3>Java 内嵌 (JimLangShell)</h3>
-          <pre><code class="language-java">String script = """
-function two() { return 2 ; } ;
-var x = two() ;
-println(x) ;
-""";
-JimLangShell shell = new JimLangShell();
-shell.eval(script, null);</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>JSR-223 ScriptEngine</h3>
-          <pre><code class="language-java">ScriptEngineManager manager = new ScriptEngineManager();
-ScriptEngine engine = manager.getEngineByName("jim");
-engine.eval("println(\"hello from JimLang\")");</code></pre>
-        </div>
+        <div class="card glass"><h3>REPL/CLI</h3>
+<pre><code class="language-bash"># REPL
+bin/jimlang.sh --cli
+# 一行执行
+bin/jimlang.sh --eval "println(\"hi\")"
+# STDIN
+cat code.jim | bin/jimlang.sh -</code></pre></div>
+        <div class="card glass"><h3>LLM（流式）</h3>
+<pre><code class="language-jim">// 示例：流式 + 回调
+function tok(t){ print("["); print(t); print("]") }
+ask_llm("用一句话描述春天", { stream: true, stream_print: false, on_token: delegate("tok") })</code></pre></div>
+        <div class="card glass"><h3>Web</h3>
+<pre><code class="language-jim">function hi(req){ return send_text("hello") }
+start_webserver(8080, route("/hi","GET", hi))</code></pre></div>
+        <div class="card glass"><h3>DB（JimSQL）</h3>
+<pre><code class="language-jim">db_open("main", {
+  url: "jdbc:jimsql://localhost:8821/test",
+  driver: "com.dafei1288.jimsql.jdbc.JqDriver"
+})
+println(json_encode(db_query("main","select 1 as x", [])))</code></pre></div>
       </div>
     </section>
 
     <section class="container" id="syntax">
       <h2>语法速览</h2>
       <div class="grid code-grid">
-        <div class="card glass">
-          <h3>Control Flow (break/continue)</h3>
-          <pre><code class="language-jim">for (var i = 0; i &lt; 5; i = i + 1) {
+        <div class="card glass"><h3>控制流</h3>
+<pre><code class="language-jim">for (var i = 0; i < 5; i = i + 1) {
   if (i == 2) { continue }
   if (i == 4) { break }
   println(i)
-}</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>Arrays &amp; Objects</h3>
-          <pre><code class="language-jim">var arr = [1, 2, 3]
-println(arr[0])     # 1
-arr[1] = 10
-println(arr.length) # 3
-
-var person = { name: "Jim", age: 25 }
-println(person.name)
-person.age = 26
-println(person.age)</code></pre>
-        </div>
+}</code></pre></div>
+        <div class="card glass"><h3>数组/对象</h3>
+<pre><code class="language-jim">var a = [1,2,3]; var o = { name: "Jim", age: 26 }
+println(a[0]); println(o.name)</code></pre></div>
+        <div class="card glass"><h3>多行字符串</h3>
+<pre><code class="language-jim">var s = '''
+line1
+line2
+'''
+println(s)</code></pre></div>
       </div>
     </section>
 
     <section class="container" id="examples">
       <h2>示例</h2>
       <div class="grid code-grid">
-        <div class="card glass">
-          <h3>Fibonacci</h3>
-          <pre><code class="language-jim">function fibonacci(n) {
-  var a = 0
-  var b = 1
-  for (var i = 0; i &lt; n; i = i + 1) {
-    var t = a
-    a = b
-    b = t + b
-  }
-  return a
-}
-println(fibonacci(10))</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>变量与函数</h3>
-          <pre><code class="language-jim">function add(a, b) { return a + b }
-var x = 10
-var y = 20
-println(add(x, y))</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>文件 I/O</h3>
-          <pre><code class="language-jim">var path = "tmp.txt"
-file_write(path, "hello")
-println(file_exists(path))
-println(file_read(path))</code></pre>
-        </div>
+        <div class="card glass"><h3>Fibonacci</h3>
+<pre><code class="language-jim">function fib(n){ var a=0; var b=1; for (var i=0;i<n;i=i+1){ var t=a; a=b; b=t+b } return a }
+println(fib(10))</code></pre></div>
+        <div class="card glass"><h3>Env + Web</h3>
+<pre><code class="language-jim">load_env(".env", true)
+function port(req){ return send_text("port=" + env_get("PORT", 8080)) }
+start_webserver(8080, route("/port","GET", port))</code></pre></div>
+        <div class="card glass"><h3>LLM（非流式）</h3>
+<pre><code class="language-jim">println( ask_llm("今天天气？", { stream: false, temperature: 0.2 }) )</code></pre></div>
       </div>
     </section>
 
     <section class="container" id="cli">
       <h2>命令行</h2>
       <div class="grid code-grid">
-        <div class="card glass">
-          <h3>运行脚本</h3>
-          <pre><code class="language-powershell"># Windows
-bin\jimlang.cmd examples\test.jim</code></pre>
-          <pre><code class="language-bash"># Unix
-bin/jimlang.sh examples/test.jim</code></pre>
-        </div>
-        <div class="card glass">
-          <h3>常用选项</h3>
-          <pre><code class="language-bash">bin\jimlang.cmd --version
-bin\jimlang.cmd --help</code></pre>
-        </div>
+        <div class="card glass"><h3>常用选项</h3>
+<pre><code class="language-bash">--cli / -i           启动交互 REPL
+--eval / -e CODE     执行一段代码
+--trace              打印调用栈（或设置 JIM_TRACE=1）
+-                    从标准输入读取脚本
+</code></pre></div>
+        <div class="card glass"><h3>/ext 外部依赖</h3>
+<pre><code class="language-bash"># 将第三方 JAR 放入项目根 ext/
+# 启动器使用 -cp 方式，会自动拼接 ext/**/*.jar
+# 例如：放入 JimSQL/Hikari/SnakeYAML/LC4J 等依赖
+</code></pre></div>
       </div>
     </section>
 
+    <section class="container" id="db">
+      <h2>数据库（JDBC）</h2>
+      <ul class="list">
+        <li>API：db_open/close/exec/query/query_stream、with_conn、db_tx（try-with-resources）</li>
+        <li>命名参数：<code>:name</code>（数组自动展开）</li>
+        <li>结果：每行 map；decimal->string；日期/时间 toString()</li>
+        <li>调试：<code>DB_DEBUG=1</code> 打印 SQL/参数/耗时</li>
+        <li>JimSQL：<code>jdbc:jimsql://localhost:8821/test</code>，<code>com.dafei1288.jimsql.jdbc.JqDriver</code></li>
+      </ul>
+    </section>
+
     <section class="container" id="build">
-      <h2>构建与测试</h2>
+      <h2>构建</h2>
       <ul class="list">
         <li>环境：Java 21+，Maven 3.x</li>
         <li>构建：<code>mvn clean package -DskipTests</code></li>
-        <li>示例脚本：<code>examples/</code> 目录</li>
+        <li>启动脚本：Windows/Unix，支持 /ext 类路径</li>
       </ul>
     </section>
 
     <section class="container" id="roadmap">
-      <h2>路线图摘要</h2>
+      <h2>路线图（摘）</h2>
       <div class="grid">
         <div class="card glass">
-          <h3>已完成（Phase 2）</h3>
+          <h3>近期完成</h3>
           <ul class="list">
-            <li>控制流：if/else、while、for、break/continue</li>
-            <li>表达式：算术/比较</li>
-            <li>数据结构：数组/对象，索引与属性访问，length 可读</li>
-            <li>标准库：字符串/数学/文件 I/O</li>
-            <li>REPL 基础；ANTLR4 + Maven</li>
+            <li>三引号字符串、短路 &&/||</li>
+            <li>错误信息带 caret/调用栈、--trace</li>
+            <li>LLM ask_llm（流式 SSE/LC4J），on_token 回调</li>
+            <li>Web 服务器与响应工具集、Cookie/下载/静态文件</li>
+            <li>JSON/YAML、load_env/env_get</li>
+            <li>JDBC：db_open/query/exec/tx/with_conn（JimSQL）</li>
+            <li>启动器 /ext 类路径</li>
           </ul>
         </div>
         <div class="card glass">
-          <h3>进行中 / 计划</h3>
+          <h3>计划中</h3>
           <ul class="list">
-            <li>标准库扩展：字符串与数学增强</li>
-            <li>文件 I/O：append 等</li>
-            <li>错误处理与提示：try/catch、更友好的错误定位</li>
-            <li>模块与高级特性</li>
+            <li>类型系统拓展与注解</li>
+            <li>事务保存点、流式查询增强</li>
+            <li>示例库与文档持续完善</li>
           </ul>
         </div>
       </div>
