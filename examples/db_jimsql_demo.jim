@@ -10,8 +10,8 @@ db_open("main", {
 
 // Create table and insert a row (if supported by server)
 // db_exec("main", "create table if not exists demo(id int, name text)")
-db_exec("main", "insert into demo(id, name) values(?, ?)", [1, "Alice"])  
+// db_exec("main", "insert into demo(id, name) values(?, ?)", [1, "Alice"])
 
 // Named parameter example
-var rows = db_query("main", "select id, name from demo where id = :id", { id: 1 })
+var rows = db_query("main", "select id, name from user where id = ? ;", [1])
 println(json_encode(rows))
