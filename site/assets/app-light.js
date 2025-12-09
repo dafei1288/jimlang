@@ -46,3 +46,30 @@
   window.addEventListener('scroll', onScroll, { passive:true });
   links.forEach(function(a,i){ a.addEventListener('click', function(){ setActive(i); }); });
 })();
+
+// Add copy buttons to code blocks
+(function(){
+  if (!navigator.clipboard) return;
+  var blocks = document.querySelectorAll('pre > code');
+  blocks.forEach(function(code){
+    var pre = code.parentElement;
+    pre.style.position = 'relative';
+    var btn = document.createElement('button');
+    btn.className = 'btn copy-btn';
+    btn.textContent = 'Copy';
+    btn.style.position = 'absolute';
+    btn.style.top = '8px';
+    btn.style.right = '8px';
+    btn.style.padding = '4px 8px';
+    btn.style.fontSize = '12px';
+    btn.style.borderRadius = '8px';
+    btn.style.opacity = '0.8';
+    btn.addEventListener('click', function(){
+      var text = code.textContent.replace(/\r\n/g, '\n');
+      navigator.clipboard.writeText(text).then(function(){
+        btn.textContent = 'Copied'; setTimeout(function(){ btn.textContent = 'Copy'; }, 1200);
+      }).catch(function(){});
+    });
+    pre.appendChild(btn);
+  });
+})();
