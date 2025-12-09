@@ -63,7 +63,7 @@
     btn.style.padding = '4px 8px';
     btn.style.fontSize = '12px';
     btn.style.borderRadius = '8px';
-    btn.style.opacity = '0.8';
+    
     btn.addEventListener('click', function(){
       var text = code.textContent.replace(/\r\n/g, '\n');
       navigator.clipboard.writeText(text).then(function(){
