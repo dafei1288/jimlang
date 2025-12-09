@@ -25,16 +25,24 @@
       <img class="logo-img" src="assets/logo.png" alt="JimLang logo" />
       <span class="brand-text">JimLang</span>
     </div>
+    
+  param($m)
+  @'
     <nav class="nav">
       <a href="#features">特性</a>
       <a href="#quickstart">快速开始</a>
+      <a href="#try">试一试</a>
       <a href="#syntax">语法速览</a>
       <a href="#examples">示例</a>
       <a href="#cli">命令行</a>
       <a href="#db">数据库</a>
       <a href="#build">构建</a>
       <a href="#roadmap">路线图</a>
+      <a href="https://github.com/dafei1288/jimlang/blob/master/doc/QUICKREF.md" target="_blank" rel="noopener">文档</a>
+      <a href="https://github.com/dafei1288/jimlang/tree/master/examples" target="_blank" rel="noopener">示例库</a>
     </nav>
+'@
+
     <button id="themeToggle" class="btn theme-toggle" aria-label="切换主题" title="切换主题">
       <svg class="icon sun" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
         <circle cx="12" cy="12" r="5" fill="currentColor" />
@@ -111,7 +119,30 @@ println(json_encode(db_query("main","select 1 as x", [])))</code></pre></div>
       </div>
     </section>
 
-    <section class="container" id="syntax">
+    
+    <section class="container" id="try">
+      <h2>试一试</h2>
+      <div class="grid code-grid">
+        <div class="card glass"><h3>REPL</h3>
+<pre><code class="language-powershell"># Windows
+bin\jimlang.cmd --cli</code></pre>
+<pre><code class="language-bash"># Unix
+bin/jimlang.sh --cli</code></pre>
+        </div>
+        <div class="card glass"><h3>LLM（流式）</h3>
+<pre><code class="language-powershell"># Windows
+bin\jimlang.cmd examples\llm_stream_demo.jim</code></pre>
+<pre><code class="language-bash"># Unix
+bin/jimlang.sh examples/llm_stream_demo.jim</code></pre>
+        </div>
+        <div class="card glass"><h3>Web Server</h3>
+<pre><code class="language-powershell"># Windows
+bin\jimlang.cmd examples\web_app\app.jim</code></pre>
+<pre><code class="language-bash"># Unix
+bin/jimlang.sh examples/web_app/app.jim</code></pre>
+        </div>
+      </div>
+    </section><section class="container" id="syntax">
       <h2>语法速览</h2>
       <div class="grid code-grid">
         <div class="card glass"><h3>控制流</h3>
