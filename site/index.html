@@ -1,4 +1,4 @@
-<!doctype html>
+﻿<!doctype html>
 <html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="utf-8" />
@@ -137,7 +137,15 @@ println(s)</code></pre></div>
       <h2>示例</h2>
       <div class="grid code-grid">
         <div class="card glass"><h3>Fibonacci</h3>
-<pre><code class="language-jim">function fib(n){ var a=0; var b=1; for (var i=0;i<n;i=i+1){ var t=a; a=b; b=t+b } return a }
+<pre><code class="language-jim">function fib(n){ var a=0;
+        var b=1;
+        for (var i=0;i&lt;n;i=i+1){
+            var t=a;
+            a=b;
+            b=t+b
+        }
+        return a }
+
 println(fib(10))</code></pre></div>
         <div class="card glass"><h3>Env + Web</h3>
 <pre><code class="language-jim">load_env(".env", true)
@@ -145,7 +153,9 @@ function port(req){ return send_text("port=" + env_get("PORT", 8080)) }
 start_webserver(8080, route("/port","GET", port))</code></pre></div>
         <div class="card glass"><h3>LLM（流式）</h3>
 <pre><code class="language-jim">ask_llm("用一句话描述春天", { stream: true })</code></pre></div>
-      </div>
+              <div class="card glass"><h3>示例（JimSQL）</h3>
+<pre><code class="language-jim">db_open("main", { url: "jdbc:jimsql://localhost:8821/test", driver: "com.dafei1288.jimsql.jdbc.JqDriver" })
+println(json_encode(db_query("main","select 1 as x", [])))</code></pre></div></div>
     </section>
 
     <section class="container" id="cli">
@@ -163,23 +173,7 @@ start_webserver(8080, route("/port","GET", port))</code></pre></div>
 # 例如：放入 JimSQL/Hikari/SnakeYAML/LC4J 等依赖
 </code></pre></div>
       </div>
-    </section>
-
-    
-  param($m)
-  $sec = $m.Groups[1].Value + @'
-      <div class="grid code-grid">
-        <div class="card glass"><h3>示例（JimSQL）</h3>
-<pre><code class="language-jim">db_open("main", { url: "jdbc:jimsql://localhost:8821/test", driver: "com.dafei1288.jimsql.jdbc.JqDriver" })
-println(json_encode(db_query("main","select 1 as x", [])))</code></pre>
-        </div>
-      </div>
-'@
-  $sec
-
-    </section>
-
-    <section class="container" id="build">
+    </section>    <section class="container" id="build">
       <h2>构建</h2>
       <ul class="list">
         <li>环境：Java 21+，Maven 3.x</li>
