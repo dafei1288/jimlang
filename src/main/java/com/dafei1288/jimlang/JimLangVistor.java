@@ -62,11 +62,10 @@ return new RuntimeException(sb.toString());
     private void popScope(){ if(!scopeStack.isEmpty()) scopeStack.pop(); }
     Scope currentScope;
 
-    // loop control flow exceptions
+        // loop control flow exceptions
     static class BreakException extends RuntimeException { private static final long serialVersionUID = 1L; }
     static class ContinueException extends RuntimeException { private static final long serialVersionUID = 1L; }
-
-    private static int toInt(Object o){
+    static class ReturnException extends RuntimeException { private static final long serialVersionUID = 1L; final Object value; ReturnException(Object v){ super(null,null,false,false); this.value=v; } public Object getValue(){ return value; } }private static int toInt(Object o){
         if(o instanceof Number) return ((Number)o).intValue();
         if(o == null) return 0;
         try{ return Integer.parseInt(String.valueOf(o).trim()); } catch(Exception e){ throw new RuntimeException("Expect integer index but got: " + o); }
@@ -82,25 +81,31 @@ return new RuntimeException(sb.toString());
 
     @Override
     public Object visitVariableDecl(VariableDeclContext ctx) {
+        String kind = ctx.getStart().getText(); // var/let/const
         String varName = ctx.identifier().getText();
-        SymbolVar symbol = (SymbolVar) current().get(varName);
-        if(symbol == null){
-            symbol = new SymbolVar();
-            symbol.setName(varName);
-            symbol.setParseTree(ctx);
-            if(ctx.typeAnnotation()!=null && ctx.typeAnnotation().typeName()!=null){ String tn = ctx.typeAnnotation().typeName().getText(); symbol.setTypeName(tn); try{ ((com.dafei1288.jimlang.metadata.SymbolVar)symbol).setExpectedType(com.dafei1288.jimlang.metadata.TypeDescriptor.parse(tn)); } catch(Exception ex){ throw error("Unknown type: "+tn, ctx); } }
-            current().put(varName,symbol);
-        }
-        for(AssignmentContext assignmentContext : ctx.assignment()){
-            if(assignmentContext.expression() != null ){
-                Object o = this.visitExpression(assignmentContext.expression());
-                com.dafei1288.jimlang.metadata.TypeDescriptor td = ((com.dafei1288.jimlang.metadata.SymbolVar)symbol).getExpectedType(); if(td!=null && !com.dafei1288.jimlang.metadata.TypeDescriptor.isAssignable(td,o)){ throw error("Type mismatch: expected "+symbol.getTypeName()+" but got "+(o==null?"null":o.getClass().getSimpleName()), ctx); } Object __coerced = com.dafei1288.jimlang.metadata.TypeDescriptor.coerceIfNeeded(td,o); symbol.setValue(__coerced);
+        // deny redeclaration in same scope
+        if (current().containsKey(varName)) { throw error("Variable '" + varName + "' already declared in this scope", ctx); }
+        SymbolVar symbol = new SymbolVar();
+        symbol.setName(varName);
+        symbol.setParseTree(ctx);
+        if (ctx.typeAnnotation()!=null && ctx.typeAnnotation().typeName()!=null){ String tn = ctx.typeAnnotation().typeName().getText(); symbol.setTypeName(tn); try{ symbol.setExpectedType(com.dafei1288.jimlang.metadata.TypeDescriptor.parse(tn)); } catch(Exception ex){ throw error("Unknown type: "+tn, ctx); } }
+        if ("const".equals(kind)) symbol.setConst(true);
+        current().put(varName, symbol);
+        java.util.List<AssignmentContext> assigns = ctx.assignment();
+        if (assigns != null) {
+            for (AssignmentContext assignmentContext : assigns){
+                if (assignmentContext.expression() != null ){
+                    Object o = this.visitExpression(assignmentContext.expression());
+                    com.dafei1288.jimlang.metadata.TypeDescriptor td = symbol.getExpectedType();
+                    if(td!=null && !com.dafei1288.jimlang.metadata.TypeDescriptor.isAssignable(td,o)){ throw error("Type mismatch: expected "+symbol.getTypeName()+" but got "+(o==null?"null":o.getClass().getSimpleName()), ctx); }
+                    Object __coerced = com.dafei1288.jimlang.metadata.TypeDescriptor.coerceIfNeeded(td,o); symbol.setValue(__coerced); symbol.setAssigned(true);
+                }
             }
         }
+        if (symbol.isConst() && !symbol.isAssigned()) { throw error("const variable must be initialized", ctx); }
         return null;
     }
-
-    @Override
+@Override
     public Object visitAssignmentStatement(JimLangParser.AssignmentStatementContext ctx) {
         Object newValue = this.visit(ctx.expression());
         JimLangParser.LvalueContext lvc = ctx.lvalue();
@@ -110,7 +115,7 @@ return new RuntimeException(sb.toString());
             throw error("Variable '" + baseName + "' is not defined", ctx);
         }
         java.util.List<JimLangParser.AccessorContext> accs = lvc.accessor();
-        if (accs == null || accs.isEmpty()) { if(!(baseSymbol instanceof com.dafei1288.jimlang.metadata.SymbolVar)) { baseSymbol.setValue(newValue); return newValue; } com.dafei1288.jimlang.metadata.SymbolVar sv = (com.dafei1288.jimlang.metadata.SymbolVar)baseSymbol; com.dafei1288.jimlang.metadata.TypeDescriptor td = sv.getExpectedType(); if(td!=null && !com.dafei1288.jimlang.metadata.TypeDescriptor.isAssignable(td,newValue)){ throw error("Type mismatch: expected "+sv.getTypeName()+" but got "+(newValue==null?"null":newValue.getClass().getSimpleName()), ctx); } Object __coerced2 = com.dafei1288.jimlang.metadata.TypeDescriptor.coerceIfNeeded(td,newValue); sv.setValue(__coerced2); return __coerced2; }
+        if (accs == null || accs.isEmpty()) { if(!(baseSymbol instanceof com.dafei1288.jimlang.metadata.SymbolVar)) { baseSymbol.setValue(newValue); return newValue; } com.dafei1288.jimlang.metadata.SymbolVar sv = (com.dafei1288.jimlang.metadata.SymbolVar)baseSymbol; com.dafei1288.jimlang.metadata.TypeDescriptor td = sv.getExpectedType(); if(td!=null && !com.dafei1288.jimlang.metadata.TypeDescriptor.isAssignable(td,newValue)){ throw error("Type mismatch: expected "+sv.getTypeName()+" but got "+(newValue==null?"null":newValue.getClass().getSimpleName()), ctx); } Object __coerced2 = com.dafei1288.jimlang.metadata.TypeDescriptor.coerceIfNeeded(td,newValue); if (sv.isConst() && sv.isAssigned()) { throw error("Cannot reassign const variable '"+baseName+"'", ctx); } sv.setValue(__coerced2); sv.setAssigned(true); return __coerced2; }
         Object holder = baseSymbol.getValue();
         for (int i = 0; i < accs.size() - 1; i++) {
             JimLangParser.AccessorContext ac = accs.get(i);
@@ -400,9 +405,7 @@ return new RuntimeException(sb.toString());
     }
 
     @Override
-    public Object visitReturnStatement(ReturnStatementContext ctx) {
-        return this.visitExpression(ctx.expression());
-    }
+    public Object visitReturnStatement(ReturnStatementContext ctx) { Object v = this.visitExpression(ctx.expression()); throw new ReturnException(v); }
     @Override
     public Object visitFunctionCall(FunctionCallContext ctx) {
         String functionName = (ctx.sysfunction() != null) ? ctx.sysfunction().getText() : null;
@@ -550,16 +553,14 @@ return new RuntimeException(sb.toString());
                     current().put(formalParams.get(i), paramVar);
                 }
             }
-            Object result = null;
+                        Object result = null;
             FunctionDeclContext funcDecl = (FunctionDeclContext) f.getParseTree();
-            if (funcDecl != null && funcDecl.functionBody() != null) {
-                if (funcDecl.functionBody().statementList() != null) {
-                    this.visit(funcDecl.functionBody().statementList());
+            try {
+                if (funcDecl != null && funcDecl.functionBody() != null) {
+                    if (funcDecl.functionBody().statementList() != null) { this.visit(funcDecl.functionBody().statementList()); }
+                    if (funcDecl.functionBody().returnStatement() != null) { result = this.visitReturnStatement(funcDecl.functionBody().returnStatement()); }
                 }
-                if (funcDecl.functionBody().returnStatement() != null) {
-                    result = this.visitReturnStatement(funcDecl.functionBody().returnStatement());
-                }
-            }
+            } catch (ReturnException re) { result = re.getValue(); }
             return result;
         } finally {
             popScope();
@@ -577,3 +578,5 @@ return new RuntimeException(sb.toString());
         if (v instanceof String) return !((String)v).isEmpty();
         return true;
     }}
+
+

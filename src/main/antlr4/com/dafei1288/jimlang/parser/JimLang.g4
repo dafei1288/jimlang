@@ -2,7 +2,7 @@ grammar JimLang;
 
 prog:  statementList? EOF;
 
-statementList : (  variableDecl | functionDecl | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement | breakStatement | continueStatement  | block )* ;
+statementList : (  variableDecl | functionDecl | expressionStatement | ifStatement | whileStatement | forStatement | assignmentStatement | breakStatement | continueStatement | returnStatement | block )* ;
 
 assignment: '=' expression ';'? ;
 
@@ -31,7 +31,7 @@ block: '{' statementList? '}' ;
 expression: singleExpression ;
 singleExpression: primary (binOP primary)* ;
 
-variableDecl : VAR identifier typeAnnotation? ( assignment )* ;
+variableDecl : (VAR|LET|CONST) identifier typeAnnotation? ( assignment )* ;
 typeAnnotation : ':' typeName;
 
 functionDecl: FUNCTION identifier B_OPEN parameterList? B_CLOSE functionBody ';'? ;
@@ -73,6 +73,8 @@ qualifiedName: ID (DOT ID)* ;
 
 VAR                                 : 'var';
 FUNCTION                            : 'function';
+LET                                 : 'let';
+CONST                               : 'const';
 RETURN                              : 'return';
 NEW                                 : 'new';
 IF                                  : 'if';

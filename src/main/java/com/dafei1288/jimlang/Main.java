@@ -5,46 +5,44 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * JimLang command line entry.
- *
- * Usage:
- *   jimlang <script.jim>        - execute a script file
- *   jimlang --cli | -i          - start interactive REPL
- *   jimlang --eval "code"        - execute a one-liner snippet
  */
 public class Main {
 
     public static void main(String[] args) {
-        // No args => print help
-        if (args.length == 0) {
-            printUsage();
-            System.exit(1);
-        }
+        boolean trace = false;
+        boolean showHelp = false;
+        boolean showVersion = false;
+        boolean interactive = false;
+        String evalCode = null;
+        String scriptPath = null;
 
-        // Parse options and detect command or script path
-        int idx = 0;
-        for (; idx < args.length; idx++) {
-            String a = args[idx];
-            if ("--trace".equals(a)) { com.dafei1288.jimlang.Trace.setEnabled(true); continue; }
-            if ("--version".equals(a) || "-v".equals(a)) { System.out.println("JimLang version 1.0-SNAPSHOT (Phase 2 Complete)"); System.out.println("Java version: " + System.getProperty("java.version")); System.exit(0); }
-            if ("--help".equals(a) || "-h".equals(a)) { printUsage(); System.exit(0); }
-            if ("--cli".equals(a) || "-i".equals(a)) { Repl.main(new String[0]); System.exit(0); }
+        // Pre-scan all args so flags can appear anywhere
+        for (int i = 0; i < args.length; i++) {
+            String a = args[i];
+            if ("--trace".equals(a)) { trace = true; continue; }
+            if ("--help".equals(a) || "-h".equals(a)) { showHelp = true; continue; }
+            if ("--version".equals(a) || "-v".equals(a)) { showVersion = true; continue; }
+            if ("--cli".equals(a) || "-i".equals(a)) { interactive = true; continue; }
             if ("--eval".equals(a) || "-e".equals(a)) {
-                if (idx + 1 >= args.length) { System.err.println("Error: --eval requires a code string"); System.exit(2); }
-                String code = args[++idx];
-                JimLangShell shell = new JimLangShell();
-                shell.eval(code, "<eval>", null);
-                System.exit(0);
+                if (i + 1 >= args.length) { System.err.println("Error: --eval requires a code string"); System.exit(2); }
+                evalCode = args[++i];
+                continue;
             }
-            break; // non-option encountered -> likely script path
+            if ("-".equals(a)) { if (scriptPath == null) scriptPath = a; continue; } if (a.startsWith("-")) { continue; }
+            if (scriptPath == null) scriptPath = a; // first non-flag argument as script
         }
 
-        // Script path or '-' for STDIN
-        if (idx >= args.length) { printUsage(); System.exit(1); }
-        String scriptPath = args[idx];
+        if (trace) { com.dafei1288.jimlang.Trace.setEnabled(true); }
+        if (showVersion) { System.out.println("JimLang version 1.0-SNAPSHOT"); System.out.println("Java version: " + System.getProperty("java.version")); return; }
+        if (showHelp || (args.length == 0 && evalCode == null && scriptPath == null && !interactive)) { printUsage(); return; }
+        if (interactive) { Repl.main(new String[0]); return; }
+        if (evalCode != null) { JimLangShell shell = new JimLangShell(); shell.eval(evalCode, "<eval>", null); return; }
+        if (scriptPath == null) { printUsage(); return; }
 
         try {
             if ("-".equals(scriptPath)) {
@@ -55,9 +53,8 @@ public class Main {
                 while ((ln = br.readLine()) != null) { sb.append(ln).append("\n"); }
                 JimLangShell shell = new JimLangShell();
                 shell.eval(sb.toString(), "<stdin>", null);
-                System.exit(0);
+                return;
             }
-
             executeScript(scriptPath);
         } catch (IOException e) {
             System.err.println("Error reading file: " + scriptPath);
@@ -71,24 +68,19 @@ public class Main {
         }
     }
 
-    // Execute a script file
     private static void executeScript(String scriptPath) throws IOException {
         if (!Files.exists(Paths.get(scriptPath))) {
             throw new IOException("File not found: " + scriptPath);
         }
-
         List<String> lines = Files.readAllLines(Paths.get(scriptPath));
         String script = String.join("\n", lines);
-
         JimLangShell shell = new JimLangShell();
         Object result = shell.eval(script, scriptPath, null);
-
         if (result != null) {
             System.out.println("Result: " + result);
         }
     }
 
-    // Print usage
     private static void printUsage() {
         System.out.println("JimLang - A Simple Programming Language");
         System.out.println();
@@ -96,14 +88,14 @@ public class Main {
         System.out.println("  jimlang --cli | -i       Start interactive REPL");
         System.out.println("  jimlang --eval \"code\"   Execute a one-liner code snippet");
         System.out.println("  jimlang <script.jim>     Execute a JimLang script file");
-        System.out.println("  jimlang --trace         Enable function call tracing");
-        System.out.println("  jimlang --version        Show version information");
-        System.out.println("  jimlang --help           Show this help message");
+        System.out.println("  --trace                  Enable function call tracing");
+        System.out.println("  --version, -v            Show version information");
+        System.out.println("  --help, -h               Show this help message");
         System.out.println();
         System.out.println("Examples:");
         System.out.println("  jimlang mycode.jim       Run mycode.jim");
         System.out.println("  type code.jim | jimlang -    Run from STDIN (Windows)");
         System.out.println();
-        System.out.println("For more information, visit: https://github.com/dafei1288/jimlang");
+        System.out.println("Flags can appear before or after the script path. e.g. jimlang --trace examples/foo.jim");
     }
 }
