@@ -274,3 +274,24 @@ $code | bin\jimlang.cmd -
   - driver: `com.dafei1288.jimsql.jdbc.JqDriver`
   - url: `jdbc:jimsql://localhost:8821/test`
   - 示例脚本：`examples/db_jimsql_demo.jim`
+## return（块内返回）
+- `return` 可在函数体内的任意嵌套块中使用（如 if/while 内部）
+- 一旦返回，函数后续语句不会执行
+- 示例：
+```jim
+function f(){ if (true) { return 42 } println(999) }
+println(f())   // 42
+```
+## 变量（var/let/const）
+- 作用域：{ ... } 为块作用域；ar/let/const 均为块级
+- const：必须初始化；禁止二次赋值
+- 重复声明：同一块作用域内重复声明将报错
+- 示例：
+`jim
+{ let a = 1; const b = 2; println(a); println(b) }
+// println(a)   // Error: Variable 'a' is not defined
+const x = 1
+// x = 2        // Error: Cannot reassign const variable 'x'
+`"
+=
++
