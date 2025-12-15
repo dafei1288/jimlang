@@ -1,0 +1,7 @@
+function f(){
+    if (true) {
+        return 42
+    }
+    println(999)
+}
+println(f())
