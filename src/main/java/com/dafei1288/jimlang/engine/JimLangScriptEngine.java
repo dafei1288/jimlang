@@ -5,8 +5,6 @@ import com.dafei1288.jimlang.JimLangShell;
 import javax.script.*;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.CharBuffer;
-import java.util.Hashtable;
 
 public class JimLangScriptEngine extends AbstractScriptEngine
         implements Compilable, Invocable {
@@ -28,22 +26,47 @@ public class JimLangScriptEngine extends AbstractScriptEngine
 
     @Override
     public CompiledScript compile(String script) throws ScriptException {
-        return null;
+        final String code = script;
+        return new CompiledScript() {
+            @Override
+            public Object eval(ScriptContext context) throws ScriptException {
+                return shell.eval(code, context.getBindings(ScriptContext.ENGINE_SCOPE));
+            }
+
+            @Override
+            public ScriptEngine getEngine() {
+                return JimLangScriptEngine.this;
+            }
+        };
     }
 
     @Override
-    public CompiledScript compile(Reader script) throws ScriptException {
-        return null;
+    public CompiledScript compile(Reader reader) throws ScriptException {
+        try {
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[4096];
+            int n;
+            while ((n = reader.read(buf)) != -1) {
+                sb.append(buf, 0, n);
+            }
+            return compile(sb.toString());
+        } catch (IOException e) {
+            throw new ScriptException(e);
+        }
     }
 
     @Override
     public Object invokeMethod(Object thiz, String name, Object... args) throws ScriptException, NoSuchMethodException {
-        return null;
+        throw new NoSuchMethodException("Invocable is not supported yet");
     }
 
     @Override
     public Object invokeFunction(String name, Object... args) throws ScriptException, NoSuchMethodException {
-        return null;
+        try {
+            return this.shell.invokeFunction(name, args);
+        } catch (RuntimeException e) {
+            throw new ScriptException(e);
+        }
     }
 
     @Override
@@ -58,35 +81,32 @@ public class JimLangScriptEngine extends AbstractScriptEngine
 
     @Override
     public Object eval(String script) throws ScriptException {
-        return shell.eval(script,null);
+        return shell.eval(script, getContext().getBindings(ScriptContext.ENGINE_SCOPE));
     }
 
     @Override
     public Object eval(String script, ScriptContext context) throws ScriptException {
-        return shell.eval(script,context.getBindings(0));
+        return shell.eval(script, context.getBindings(ScriptContext.ENGINE_SCOPE));
     }
 
     @Override
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
-        int i = 0;
-        char[] cs = new char[1024];
-        StringBuffer stringBuffer = new StringBuffer();
         try {
-            while((i=reader.read(cs))>0){
-                stringBuffer.append(cs,0,i);
+            StringBuilder sb = new StringBuilder();
+            char[] buf = new char[4096];
+            int n;
+            while ((n = reader.read(buf)) != -1) {
+                sb.append(buf, 0, n);
             }
-            stringBuffer.append(cs,0,i);
-        } catch (Exception e) {
-            e.printStackTrace();
+            return shell.eval(sb.toString(), context.getBindings(ScriptContext.ENGINE_SCOPE));
+        } catch (IOException e) {
+            throw new ScriptException(e);
         }
-
-
-        return shell.eval(stringBuffer.toString(),context.getBindings(0));
     }
 
     @Override
     public Bindings createBindings() {
-        return null;
+        return new SimpleBindings();
     }
 
     @Override

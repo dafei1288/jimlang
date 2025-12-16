@@ -42,7 +42,7 @@ set dependency
     }
 ```
 
-or use jsr-233
+or use jsr-223
 
 ```
     @Test
@@ -72,12 +72,12 @@ or use jsr-233
 
 ## Build from source
 
-`mvn clean package -DskipTest=true`
+`mvn clean package -DskipTests=true`
 
 
 # Roadmap
-## CLI Quick Start
 
+- Language: supports early return from nested blocks (if/while/for)
 - Build: `mvn -q -DskipTests package`
 - Run a script: `bin\\jimlang.cmd examples\\fibonacci.jim`
 - Start REPL: `bin\\jimlang.cmd --cli` (or `-i`)
@@ -113,7 +113,7 @@ yml_dump(o, "tmp.yml", 2)
 ```
 
 ## Strings
-- Triple-quoted multi-line strings: ''' ... ''' (preserves newlines/whitespace). See doc/QUICKREF.md.## First-class functions
+- Triple-quoted multi-line strings: ''' ... ''' (preserves newlines/whitespace). See doc/QUICKREF.md.\n\n## First-class functions
 
 > Note: sysfunctions are also first-class values. You can assign and call them:
 ```jim
@@ -145,4 +145,38 @@ start_webserver(8080, "/api/ping", "GET", api)
 
 See more: `doc/QUICKREF.md` (Web section)
 - examples/web_app
-- examples/env/web_port.jim read .env for PORT and GREETING – complete web app (routes, static, cookies, download)
+- examples/env/web_port.jim read .env for PORT and GREETING 锟?complete web app (routes, static, cookies, download)
+## Java Interop via Context (read-only ctx["锟斤拷"]) 
+
+- Use `JimLangShell.eval(script, sourceName, context)` to inject variables:
+  - The entire map is exposed as `ctx` (Map).
+  - Identifier-friendly keys (`[A-Za-z_][A-Za-z0-9_]*`) are also injected as globals (e.g., `input`, `discount`).
+  - Keys with special characters are accessed by bracket syntax: `ctx["user-id"]` (currently read-only).
+
+Example (Java):
+
+```java
+Map<String,Object> input = Map.of(
+  "name", "Alice",
+  "scores", Arrays.asList(2,3,5,7)
+);
+Map<String,Object> ctx = new LinkedHashMap<>();
+ctx.put("input", input);
+ctx.put("discount", 0.85);
+ctx.put("user-id", "u123");
+String script = String.join("\n",
+  "var sum = 0;",
+  "for (var i = 0; i < input.scores.length; i = i + 1) { sum = sum + input.scores[i]; }",
+  "var uid = ctx[\"user-id\"];",
+  "{ name: input.name, final: sum * discount, uid: uid }"
+);
+Object ret = new JimLangShell().eval(script, "<inject-demo>", ctx);
+System.out.println(ret);
+```
+
+- More examples:
+  - `examples/DemoEvalInjectCtx.java`
+  - `examples/DemoEvalRoundTrip.java`
+  - `examples/DemoCallFunctionWithParams.java`
+
+Note: `ctx["锟斤拷"]` is read-only for now; write support (e.g. `ctx["k"] = v`) can be added later.

@@ -4,8 +4,7 @@ import javax.script.ScriptEngine;
 import java.util.Arrays;
 import java.util.List;
 
-public class JimLangScriptEngineFactory implements
-        javax.script.ScriptEngineFactory{
+public class JimLangScriptEngineFactory implements javax.script.ScriptEngineFactory{
     // Begin impl ScriptEnginInfo
 
     final List<String> extensions = Arrays.asList( "jim", "java" );
@@ -52,13 +51,13 @@ public class JimLangScriptEngineFactory implements
         if ( param.equals( ScriptEngine.ENGINE_VERSION ) )
             return getEngineVersion();
         if ( param.equals( ScriptEngine.NAME ) )
-            return getEngineName();
+            return "jim";
         if ( param.equals( ScriptEngine.LANGUAGE ) )
             return getLanguageName();
         if ( param.equals( ScriptEngine.LANGUAGE_VERSION ) )
             return getLanguageVersion();
         if ( param.equals( "THREADING" ) )
-            return "MULTITHREADED";
+            return "THREAD-ISOLATED";
 
         return null;
     }
@@ -66,10 +65,6 @@ public class JimLangScriptEngineFactory implements
     public String getMethodCallSyntax(
             String objectName, String methodName, String ... args )
     {
-        // Note: this is very close to the bsh.StringUtil.methodString()
-        // method, which constructs a method signature from arg *types*.  Maybe
-        // combine these later.
-
         StringBuilder sb = new StringBuilder();
         if ( objectName != null )
             sb.append( objectName + "." );
@@ -104,7 +99,7 @@ public class JimLangScriptEngineFactory implements
 
     // Begin impl ScriptEngineFactory
 
-    public ScriptEngine getScriptEngine()
+    public javax.script.ScriptEngine getScriptEngine()
     {
         return new JimLangScriptEngine(this);
     }
