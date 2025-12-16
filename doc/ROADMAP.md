@@ -34,27 +34,24 @@
 - CLI/REPL：选项优先解析（--cli/-i、--eval/-e、"-" 从 STDIN）；--trace 可用
 - 跟踪/错误：caret + 源名:行:列 + 调用栈；Trace enter/leave
 - 作用域：函数作用域与块作用域；遮蔽与最近作用域赋值；配套示例与单测
+- 语法/执行：块内 return（早返回）已支持
 - 类型系统：string/number/boolean/int/float/array/object/Java FQCN；int→float 宽化；类型错误信息包含位置信息
 - 标准库：字符串、数组、数学、文件 I/O；新增 join/keys/values/typeof/isArray/isObject/parseInt/parseFloat
 - 维护：语法文件去重（以 src/main/antlr4 为准）、Windows 启动脚本注释改为 ASCII
 
 ## TODO（优先级高→低）
 - CLI 与可用性：
-  - 增加集成测试覆盖：--trace/--eval/STDIN 组合；退出码规范
+  - 补充集成测试：已覆盖 --eval/STDIN；待补 --trace 与 --eval/STDIN 组合；错误时退出码（非 0）约定及测试
 - 类型系统：
   - 更细的类型规则与错误信息；可选的类型推断
 - 标准库：
-  - 视需要补充 JSON 辅助等
+  - JSON/YAML 已具备；如有需要再补充工具函数
 - 记录的暂缓项：
   - 函数参数/返回值类型注解（function f(a:int): number）[暂缓]
-  - let/const（块作用域 + const 禁止重赋值）[暂缓]
-
 （本文件编码：UTF-8 无 BOM）
 ## TODO（优先级高→低）
 - Web（内置服务器）：
   - 回归测试集：覆盖 /api/ping、/api/echo、/users/:id、/static/*、下载、Cookie set/show/clear；随机端口；启动/停止生命周期。
-  - 细节增强：静态文件路径规范化（防目录穿越）、缺省 404/405 页面、简易访问日志。
-  - 可配置项：从环境变量/命令行读取端口、主机、日志开关。
+  - 细节增强：静态文件路径规范化（防目录穿越）、简易访问日志。
+  - 可配置项：从环境变量/命令行读取主机、日志开关（端口已可由脚本通过 env_get 传入）。
   - API：stop_webserver(port) 关闭指定端口服务。
-- 语法/执行（可选，暂缓）：
-  - 支持块内 return（早返回）：允许在 if/while/for 块中 return；需 grammar 放宽与 ReturnException 机制；配套单测。

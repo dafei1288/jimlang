@@ -6,7 +6,8 @@ Date: 2025-12-04
 - Syntax/Parsing: ANTLR4; blocks as statements; arrays/objects; accessors (dot and index)
 - Execution: REPL, scripts, STDIN; CLI options parsed before script path (--cli/-i, --eval/-e, --trace)
 - Errors & Trace: runtime errors include source:line:col + caret + call stack; Trace push/pop with enter/leave; enabled by --trace or JIM_TRACE
-- Scoping: function scope and block scope; shadowing; nearest-scope assignment semantics
+
+- Variables: var/let/const (block scope; const not reassignable) + tests
 - Types (baseline): string/number/boolean/int/float/array/object/Java FQCN; widening int -> float; errors include location info
 - Stdlib: strings, arrays, math, file I/O; added join/keys/values/typeof/isArray/isObject/parseInt/parseFloat
 - Docs: QUICKREF/ROADMAP/README/README_ZH unified to UTF-8 (no BOM); examples for scoping
@@ -19,8 +20,6 @@ Date: 2025-12-04
 
 ## Deferred (record only)
 - Function param/return type annotations (function f(a:int): number) + tests
-- let/const (block scope; const not reassignable) + tests
-
 ## Next (safe chores)
 - Add JUnit/integration tests for CLI combos (--trace + --eval, STDIN, error exit codes)
 - Consider small stdlib additions (JSON helpers) if needed by examples

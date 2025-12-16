@@ -32,7 +32,7 @@ import java.util.Hashtable;
 public class JimLangVistor extends JimLangBaseVisitor {    private String sourceName = "<script>";
     private String[] sourceLines = new String[0];
     public void setSourceName(String s){ this.sourceName = (s==null?"<script>":s); }
-    public void setSourceText(String txt){ this.sourceLines = (txt==null)? new String[0] : txt.split("\r?", -1); }
+    public void setSourceText(String txt){ this.sourceLines = (txt==null)? new String[0] : txt.split("\\r?\\n", -1); }
     private RuntimeException error(String msg, org.antlr.v4.runtime.ParserRuleContext ctx){
         int line=1,col=1;
         if (ctx!=null && ctx.getStart()!=null){ line = ctx.getStart().getLine(); col = ctx.getStart().getCharPositionInLine()+1; }
@@ -76,7 +76,14 @@ return new RuntimeException(sb.toString());
     @Override
     public Object visitProg(ProgContext ctx) {
         currentScope = new RootScope();
-        return super.visitProg(ctx);
+        try {
+            if (ctx.statementList() != null) {
+                return this.visit(ctx.statementList());
+            }
+            return null;
+        } catch (ReturnException re) {
+            return re.getValue();
+        }
     }
 
     @Override
@@ -437,24 +444,8 @@ return new RuntimeException(sb.toString());
             org.antlr.v4.runtime.tree.ParseTree ch = ctx.getChild(i);
             if (ch instanceof com.dafei1288.jimlang.parser.JimLangParser.AccessorContext) {
                 com.dafei1288.jimlang.parser.JimLangParser.AccessorContext ac = (com.dafei1288.jimlang.parser.JimLangParser.AccessorContext) ch;
-                if (ac.expression() != null) {
-                    int idx2 = toInt(this.visit(ac.expression()));
-                    if (!(value instanceof java.util.List)) throw error("Index access on non-array", ctx);
-                    java.util.List list = (java.util.List) value;
-                    if (idx2 < 0 || idx2 >= list.size()) throw error("Index out of bounds: " + idx2, ctx);
-                    value = list.get(idx2);
-                } else {
-                    String key = ac.identifier().getText();
-                    if (value instanceof java.util.Map) {
-                        value = ((java.util.Map) value).get(key);
-                    } else if (value instanceof java.util.List && "length".equals(key)) {
-                        value = ((java.util.List) value).size();
-                    } else if (value instanceof String && "length".equals(key)) {
-                        value = ((String) value).length();
-                    } else {
-                        throw error("Property access on non-object", ctx);
-                    }
-                }
+                if (ac.expression() != null) {                     Object ix = this.visit(ac.expression());                     if (value instanceof java.util.Map) {                         if (ix instanceof String) {                             value = ((java.util.Map) value).get((String) ix);                         } else {                             throw error("Index access on non-array", ctx);                         }                     } else {                         int idx2 = toInt(ix);                         if (!(value instanceof java.util.List)) throw error("Index access on non-array", ctx);                         java.util.List list = (java.util.List) value;                         if (idx2 < 0 || idx2 >= list.size()) throw error("Index out of bounds: " + idx2, ctx);                         value = list.get(idx2);                     }                 }
+                else {                     String key = ac.identifier().getText();                     if (value instanceof java.util.Map) {                         value = ((java.util.Map) value).get(key);                     } else if (value instanceof java.util.List && "length".equals(key)) {                         value = ((java.util.List) value).size();                     } else if (value instanceof String && "length".equals(key)) {                         value = ((String) value).length();                     } else {                         throw error("Property access on non-object", ctx);                     }                 }
             } else if (ch instanceof com.dafei1288.jimlang.parser.JimLangParser.CallSuffixContext) {
                 com.dafei1288.jimlang.parser.JimLangParser.CallSuffixContext cs = (com.dafei1288.jimlang.parser.JimLangParser.CallSuffixContext) ch;
                 java.util.ArrayList<Object> args = new java.util.ArrayList<>();

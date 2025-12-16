@@ -84,3 +84,4 @@ test-output/
 .claude
 
 ./examples/.env_llm
+examples/.env_llm
