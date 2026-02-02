@@ -85,3 +85,5 @@ test-output/
 
 ./examples/.env_llm
 examples/.env_llm
+build/
+out/

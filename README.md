@@ -64,6 +64,16 @@ or use jsr-223
     }
 ```
 
+# Agent-based Setup (Recommended)
+
+- After cloning, at repo root tell your agent (Codex/Claude Code): "set up dev environment" or "first build and start dev".
+- The agent will:
+  - verify JDK 21+ and Maven 3.8+;
+  - run: `mvn -q -DskipTests package`;
+  - smoke test: `bin\jimlang.cmd --eval "println(1+2)"` and `examples\fibonacci.jim` on Windows, or `bin/jimlang.sh --eval "println(1+2)"` and `examples/fibonacci.jim` on Unix;
+  - start REPL: `--cli`;
+  - optional: `build_win.bat` (jlink) on Windows; `mkos.sh` on Linux/WSL.
+- See `AGENTS.md` for details and troubleshooting.
 # Development
 
 ## Prerequisites
@@ -73,6 +83,9 @@ or use jsr-223
 ## Build from source
 
 `mvn clean package -DskipTests=true`
+
+## IDE:
+  [vs-code](https://marketplace.visualstudio.com/items?itemName=jimlang.jimlang-vscode)
 
 
 # Roadmap
@@ -145,8 +158,8 @@ start_webserver(8080, "/api/ping", "GET", api)
 
 See more: `doc/QUICKREF.md` (Web section)
 - examples/web_app
-- examples/env/web_port.jim read .env for PORT and GREETING 锟?complete web app (routes, static, cookies, download)
-## Java Interop via Context (read-only ctx["锟斤拷"]) 
+- examples/env/web_port.jim read .env for PORT and GREETING complete web app (routes, static, cookies, download)
+## Java Interop via Context (read-only ctx["x"])
 
 - Use `JimLangShell.eval(script, sourceName, context)` to inject variables:
   - The entire map is exposed as `ctx` (Map).
@@ -179,4 +192,4 @@ System.out.println(ret);
   - `examples/DemoEvalRoundTrip.java`
   - `examples/DemoCallFunctionWithParams.java`
 
-Note: `ctx["锟斤拷"]` is read-only for now; write support (e.g. `ctx["k"] = v`) can be added later.
+Note: `ctx["x"]` is read-only for now; write support (e.g. `ctx["k"] = v`) can be added later.

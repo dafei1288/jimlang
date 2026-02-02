@@ -72,6 +72,10 @@ public void demoJsr223() throws ScriptException {
 
 ---
 
+## 使用智能体快速部署（推荐）
+- 克隆仓库后，在仓库根对智能体（Codex/Claude Code）说：`帮我部署开发环境` 或 `首次构建并进入开发`。
+- 智能体将依次：检查 JDK 21+/Maven 3.8+；执行 `mvn -q -DskipTests package`；冒烟验证（Windows：`bin\jimlang.cmd --eval "println(1+2)"` 与 `examples\fibonacci.jim`；Unix：`bin/jimlang.sh --eval "println(1+2)"` 与 `examples/fibonacci.jim`）；启动 REPL（`--cli`）。可选执行 `build_win.bat`（jlink）或 `mkos.sh`（WSL/Linux）。
+- 详细步骤与故障排查见 `AGENTS.md`。
 ## 开发与构建
 
 - 环境要求：
@@ -82,6 +86,9 @@ public void demoJsr223() throws ScriptException {
   ```bash
   mvn -q -DskipTests package
   ```
+- ide:
+    [vs-code 扩展](https://marketplace.visualstudio.com/items?itemName=jimlang.jimlang-vscode)
+
 
 ---
 

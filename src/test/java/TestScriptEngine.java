@@ -12,7 +12,7 @@ public class TestScriptEngine {
         String script = """
                 function two() { return 2 ; } ;
                 function one() { return 1 ; } ;
-                var x = one() + two() ; 
+                var x = one() + two() ;
                 println("this message is from jimlang!!!")
                 println( x ) ;
                 """;
@@ -23,3 +23,4 @@ public class TestScriptEngine {
         engine.eval(script);
     }
 }
+
