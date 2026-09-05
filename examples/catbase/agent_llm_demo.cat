@@ -1,16 +1,15 @@
 # =============================================================================
-# 图书助手 Agent · LLM 大脑版 (可直接用 JimLang 运行，已实测)
+# 简易 Agent 框架 · LLM 大脑版 (可直接用 JimLang 运行，已实测)
 # -----------------------------------------------------------------------------
-# 与 agent_demo.cat(规则大脑) 的区别：这里的“大脑”是真实大模型 ask_llm()。
-# 每轮流程：
-#   1) 把【系统角色 + 可用工具(JSON协议) + 长期记忆 + 最近对话 + 本轮用户】
-#      拼成一个 prompt，交给 ask_llm()
-#   2) 模型输出一行 JSON 动作：{"intent":.., "id":.. / "kw":.., "say":".."}
-#   3) 按 intent 调用工具(行动)，工具结果再交给模型组织成一句话回复
-#   4) 记入记忆(history/facts)
-# 前置条件：export LLM_API_KEY=...（或用 DEEPSEEK_API_KEY / .env 的 load_env）
-# 默认模型 deepseek-chat(base https://api.deepseek.com)，可用下方 LLM_OPTS 覆盖。
-# 官方 catbasecc 版见 examples/catbase/agent/agent_full.cat（http_post 接法见文章第 6 节）
+# 领域无关：框架代码与“业务”完全分离，这里只挂一个最小的示例工具
+# “待办清单(todo)”——换成你的领域(查询/下单/写文件/调 API)时，只需替换
+# “工具层”与 brain_prompt 里的工具说明，框架(loop/memory/context/llm)不动。
+# 每轮：
+#   1) 工具说明 + 长期记忆 + 最近对话 + 本轮用户 -> prompt -> ask_llm
+#   2) 模型输出一行 JSON 动作，例如 {"intent":"todo_add","text":"周三交周报"}
+#   3) 框架执行对应工具；工具结果再让模型润色成人话
+#   4) 写入记忆(history/facts)
+# 前置：export LLM_API_KEY=... 或项目根目录 .env 写 LLM_API_KEY=sk-...
 # =============================================================================
 
 LLM_OPTS: dict[str, any] = {
@@ -20,97 +19,69 @@ LLM_OPTS: dict[str, any] = {
 }
 
 # ---------------------------------------------------------------------------
-# 迷你书库（工具域，agent 的手）
+# 工具层（示例领域：待办清单）—— 替换这里 = 换成你的业务
 # ---------------------------------------------------------------------------
 
-def new_store() -> dict[str, any] {
-    s: dict[str, any] = { "next_id": 1, "books": [] }
-    return s
+def new_todos() -> dict[str, any] {
+    return { "next_id": 1, "items": [] }
 }
 
-def seed_store(s: dict[str, any]) {
-    b1: dict[str, any] = { "id": 1, "title": "三体", "author": "刘慈欣", "copies": 2, "borrowed": 0 }
-    b2: dict[str, any] = { "id": 2, "title": "深入理解计算机系统", "author": "Bryant", "copies": 1, "borrowed": 0 }
-    b3: dict[str, any] = { "id": 3, "title": "小王子", "author": "圣埃克苏佩里", "copies": 3, "borrowed": 0 }
-    append(s["books"], b1)
-    append(s["books"], b2)
-    append(s["books"], b3)
-    s["next_id"] = 4
+def todo_add(t: dict[str, any], text: str) -> str {
+    nid: int = t["next_id"]
+    item: dict[str, any] = { "id": nid, "text": text, "done": false }
+    append(t["items"], item)
+    t["next_id"] = nid + 1
+    return "已添加待办 #" + str(nid) + "：" + text
 }
 
-def tool_list(s: dict[str, any]) -> str {
-    books: list[any] = s["books"]
-    parts: str = ""
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        parts = parts + "#" + str(b["id"]) + " 《" + str(b["title"]) + "》 " + str(b["author"]) + " 可借" + str(b["copies"] - b["borrowed"]) + "\n"
+def todo_list(t: dict[str, any]) -> str {
+    items: list[any] = t["items"]
+    if len(items) == 0 {
+        return "当前没有待办"
     }
-    return parts
-}
-
-def title_to_id(s: dict[str, any], kw: str) -> int {
-    books: list[any] = s["books"]
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        if str(b["title"]).contains(kw) {
-            return b["id"]
+    out: str = ""
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        mark: str = "x"
+        if not it["done"] {
+            mark = " "
         }
+        out = out + "[" + mark + "] #" + str(it["id"]) + " " + str(it["text"]) + "\n"
     }
-    return 0
+    return out
 }
 
-def tool_borrow(s: dict[str, any], nid: int, kw: str) -> str {
-    if nid == 0 {
-        nid = title_to_id(s, kw)
-    }
-    if nid == 0 {
-        return "没有找到要借的书，请先列出书目或用书名明确说出"
-    }
-    books: list[any] = s["books"]
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        if b["id"] == nid {
-            if b["copies"] - b["borrowed"] > 0 {
-                b["borrowed"] = b["borrowed"] + 1
-                return "借出成功：《" + str(b["title"]) + "》"
+def todo_done(t: dict[str, any], nid: int) -> str {
+    items: list[any] = t["items"]
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        if it["id"] == nid {
+            if it["done"] {
+                return "#" + str(nid) + " 已完成过了"
             }
-            return "《" + str(b["title"]) + "》暂无剩余可借"
+            it["done"] = true
+            return "已完成 #" + str(nid) + "：" + str(it["text"])
         }
     }
-    return "没有编号 " + str(nid) + " 的书"
+    return "没有编号 " + str(nid) + " 的待办"
 }
 
-def tool_return(s: dict[str, any], nid: int, kw: str) -> str {
-    if nid == 0 {
-        nid = title_to_id(s, kw)
-    }
-    if nid == 0 {
-        return "没有找到要还的书"
-    }
-    books: list[any] = s["books"]
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        if b["id"] == nid {
-            if b["borrowed"] > 0 {
-                b["borrowed"] = b["borrowed"] - 1
-                return "还书成功：《" + str(b["title"]) + "》"
+def todo_del(t: dict[str, any], nid: int) -> str {
+    items: list[any] = t["items"]
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        if it["id"] == nid {
+            keep: list[any] = []
+            for j in range(0, len(items)) {
+                if items[j] != it {
+                    append(keep, items[j])
+                }
             }
-            return "《" + str(b["title"]) + "》没有被借出"
+            t["items"] = keep
+            return "已删除 #" + str(nid) + "：" + str(it["text"])
         }
     }
-    return "没有编号 " + str(nid) + " 的书"
-}
-
-def tool_stats(s: dict[str, any]) -> str {
-    books: list[any] = s["books"]
-    total: int = 0
-    br: int = 0
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        total = total + b["copies"]
-        br = br + b["borrowed"]
-    }
-    return "馆藏种类=" + str(len(books)) + " 总册数=" + str(total) + " 借出=" + str(br)
+    return "没有编号 " + str(nid) + " 的待办"
 }
 
 # ---------------------------------------------------------------------------
@@ -148,31 +119,24 @@ def note_fact(mem: dict[str, any], fact: str) {
     }
 }
 
-def sub_between(s: str, opench: str, closech: str) -> str {
-    a: int = indexOf(s, opench)
-    b: int = indexOf(s, closech)
-    if a < 0 {
-        return ""
-    }
-    if b <= a {
-        return ""
-    }
-    return substring(s, a + 1, b)
+# ---------------------------------------------------------------------------
+# 大脑：build prompt -> ask_llm -> 解析 JSON 动作
+# ---------------------------------------------------------------------------
+
+def tools_doc() -> str {
+    d: str = "可用工具（用一行 JSON 表示动作，不要多余文字）：\n"
+    d = d + "- {\"intent\":\"todo_add\",\"text\":\"事项内容\"} 新增待办\n"
+    d = d + "- {\"intent\":\"todo_list\"} 查看全部待办\n"
+    d = d + "- {\"intent\":\"todo_done\",\"id\":编号} 把某条待办标记完成\n"
+    d = d + "- {\"intent\":\"todo_del\",\"id\":编号} 删除某条待办\n"
+    d = d + "- {\"intent\":\"chat\",\"say\":\"自然回复\"} 闲聊/打招呼/无法理解或无需工具时使用\n"
+    return d
 }
 
-# ---------------------------------------------------------------------------
-# 大脑：build_brain_prompt -> ask_llm -> 解析 JSON 动作
-# ---------------------------------------------------------------------------
-
 def brain_prompt(mem: dict[str, any], user_msg: str) -> str {
-    p: str = "你是“图书助手”智能体。你可以使用下列工具，工具用 JSON 动作表示：\n"
-    p = p + "1) {\"intent\":\"list\"} 列出所有馆藏\n"
-    p = p + "2) {\"intent\":\"find\",\"kw\":\"关键词\"} 查询书名包含关键词的书\n"
-    p = p + "3) {\"intent\":\"borrow\",\"id\":数字,\"kw\":\"书名或留空\"} 借书（没有 id 就填书名）\n"
-    p = p + "4) {\"intent\":\"ret\",\"id\":数字,\"kw\":\"书名或留空\"} 还书\n"
-    p = p + "5) {\"intent\":\"stats\"} 统计馆藏\n"
-    p = p + "6) {\"intent\":\"help\",\"say\":\"...\"} 闲聊、打招呼、无法理解或不需要工具时，用 say 给出自然回复\n"
-    p = p + "规则：只能输出一行 JSON，不要任何解释或代码块；借书/还书优先填 id，只知道书名就填 kw。\n"
+    p: str = "你是“小助手”，一个通用 agent。\n"
+    p = p + tools_doc()
+    p = p + "规则：只输出一行 JSON，不要代码块与解释；涉及编号时尽量用列表里的真实编号。\n"
     p = p + "\n【长期记忆】\n"
     fs: list[any] = mem["facts"]
     for i in range(0, len(fs)) {
@@ -190,7 +154,6 @@ def brain_prompt(mem: dict[str, any], user_msg: str) -> str {
 }
 
 def parse_action(raw: str) -> dict[str, any] {
-    # 容错：去掉可能的代码围栏后尝试解析
     text: str = raw
     if text.startsWith("```") {
         pos: int = indexOf(text, "\n")
@@ -207,10 +170,31 @@ def parse_action(raw: str) -> dict[str, any] {
     if trimmed.startsWith("{") {
         act = json_loads(trimmed)
     } else {
-        act["intent"] = "help"
+        act["intent"] = "chat"
         act["say"] = trimmed
     }
     return act
+}
+
+# ---------------------------------------------------------------------------
+# 行动层：intent -> 工具（换成你的业务就在这里加分支）
+# ---------------------------------------------------------------------------
+
+def run_tool(t: dict[str, any], act: dict[str, any]) -> str {
+    intent: str = str(act.get("intent", "chat"))
+    if intent == "todo_add" {
+        return todo_add(t, str(act.get("text", "")))
+    }
+    if intent == "todo_list" {
+        return todo_list(t)
+    }
+    if intent == "todo_done" {
+        return todo_done(t, int(str(act.get("id", 0))))
+    }
+    if intent == "todo_del" {
+        return todo_del(t, int(str(act.get("id", 0))))
+    }
+    return ""   # chat：无工具动作
 }
 
 def llm(opts: dict[str, any], prompt: str) -> str {
@@ -218,78 +202,39 @@ def llm(opts: dict[str, any], prompt: str) -> str {
 }
 
 # ---------------------------------------------------------------------------
-# 每轮：模型决策 -> 执行工具 -> 模型润色回复 -> 记忆
+# agent loop
 # ---------------------------------------------------------------------------
 
-def run_turn(s: dict[str, any], mem: dict[str, any], user_msg: str) -> str {
+def run_turn(t: dict[str, any], mem: dict[str, any], user_msg: str) -> str {
     remember(mem, "user", user_msg)
 
     print("┌─ 思考中(ask_llm) ─────────────────────\n")
     act_raw: str = llm(LLM_OPTS, brain_prompt(mem, user_msg))
-    print("│ 模型动作原始输出：", act_raw, "\n")
+    print("│ 模型输出：", act_raw, "\n")
     act: dict[str, any] = parse_action(act_raw)
-    intent: str = str(act.get("intent", "help"))
-
+    intent: str = str(act.get("intent", "chat"))
     print("│ 决策：intent=", intent, "\n")
-    result: str = ""
 
-    if intent == "list" {
-        result = tool_list(s)
-    } else {
-        if intent == "find" {
-            kw: str = str(act.get("kw", ""))
-            books: list[any] = s["books"]
-            result = ""
-            for i in range(0, len(books)) {
-                b: dict[str, any] = books[i]
-                if str(b["title"]).contains(kw) {
-                    result = result + "找到 #" + str(b["id"]) + " 《" + str(b["title"]) + "》 可借" + str(b["copies"] - b["borrowed"]) + "\n"
-                }
-            }
-            if result == "" {
-                result = "没有找到包含“" + kw + "”的书"
-            }
-        } else {
-            if intent == "borrow" {
-                result = tool_borrow(s, int(str(act.get("id", 0))), str(act.get("kw", "")))
-            } else {
-                if intent == "ret" {
-                    result = tool_return(s, int(str(act.get("id", 0))), str(act.get("kw", "")))
-                } else {
-                    if intent == "stats" {
-                        result = tool_stats(s)
-                    }
-                }
-            }
-        }
+    result: str = run_tool(t, act)
+    if result != "" {
+        print("│ 工具返回：", result, "\n")
     }
-
-    print("│ 工具返回：", result, "\n")
 
     reply: str = ""
     if result == "" {
-        # 纯对话类：直接用模型 say / 原文
         reply = str(act.get("say", act_raw))
     } else {
-        # 工具执行后，让模型把结果润色成自然语言
-        polish: str = "你是图书助手。工具返回结果如下，请用一句自然中文把它转述给用户，不要编造、不要提 JSON：\n" + result
+        polish: str = "你是小助手。工具执行结果：\n" + result + "\n请用一句自然中文转述给用户，不要编造，不要提 JSON。"
         reply = llm(LLM_OPTS, polish)
     }
     print("└─────────────────────────────────────────\n")
 
     remember(mem, "assistant", reply)
-    if intent == "borrow" {
-        if result.contains("借出成功") {
-            note_fact(mem, "最近借了《" + sub_between(result, "《", "》") + "》")
-        }
-    }
     return reply
 }
 
 # ---------------------------------------------------------------------------
-# key 检查：ask_llm 取 key 的顺序是 LLM_API_KEY -> API_KEY -> DEEPSEEK_API_KEY
-# （显式传入的 overrides > .env 覆盖层 > 系统环境变量）。这里先做友好预检，
-# 避免 401 时只能看到一段长长的调用栈。
+# key 预检：ask_llm 取 key 顺序 LLM_API_KEY -> API_KEY -> DEEPSEEK_API_KEY
 # ---------------------------------------------------------------------------
 
 def key_tail(k: str) -> str {
@@ -301,7 +246,7 @@ def key_tail(k: str) -> str {
 }
 
 def check_key() -> str {
-    load_env(".env", true)   # 若当前目录有 .env（如 LLM_API_KEY=sk-...），读入覆盖层
+    load_env(".env", true)
     k: str = ""
     src: str = ""
     k = str(env_get("LLM_API_KEY", ""))
@@ -321,9 +266,9 @@ def check_key() -> str {
         }
     }
     if k == "" {
-        print("未检测到 API key。请任选其一后重试：\n")
-        print("  export LLM_API_KEY=sk-...        # 优先级最高\n")
-        print("  或在项目根目录创建 .env，写入 LLM_API_KEY=sk-...\n")
+        print("未检测到 API key。任选其一后重试：\n")
+        print("  export LLM_API_KEY=sk-...\n")
+        print("  或在项目根目录创建 .env 写入 LLM_API_KEY=sk-...\n")
         return ""
     }
     print("将使用 ", src, " 中的 key（尾号 ...", key_tail(k), "）\n")
@@ -334,26 +279,25 @@ def main(args: list[str]) {
     if check_key() == "" {
         return
     }
-    s: dict[str, any] = new_store()
-    seed_store(s)
+    t: dict[str, any] = new_todos()
     mem: dict[str, any] = new_memory()
 
-    print("========== 图书助手 · LLM 大脑版 ==========\n")
-    print("模型：deepseek-chat（可用 LLM_API_KEY 环境变量配置）\n")
+    print("========== 小助手 · Agent（LLM 大脑 · 领域无关） ==========\n")
+    print("（挂载示例工具：待办清单；换成你的业务只改 run_tool 与工具说明）\n")
 
     msgs: list[any] = [
-        "你好呀",
-        "有哪些书？",
-        "我想借《小王子》",
-        "还一下《小王子》",
-        "统计一下馆藏情况",
+        "你好",
+        "帮我记一条待办：周三交周报",
+        "再看看我的待办",
+        "把第 1 条完成掉",
+        "删掉第 2 条",
         "谢谢，再见"
     ]
 
     for i in range(0, len(msgs)) {
         m: str = str(msgs[i])
         print(">>> 用户：", m, "\n")
-        reply: str = run_turn(s, mem, m)
+        reply: str = run_turn(t, mem, m)
         print("<<< 助手：", reply, "\n\n")
         if m.contains("再见") {
             break
@@ -361,15 +305,14 @@ def main(args: list[str]) {
     }
 
     print("========== 记忆快照 ==========\n")
-    print("【长期事实】\n")
     fs: list[any] = mem["facts"]
     for i in range(0, len(fs)) {
         print("  - ", fs[i], "\n")
     }
-    print("【最近对话】\n")
     h: list[any] = mem["history"]
     for i in range(0, len(h)) {
-        t: dict[str, any] = h[i]
-        print("  ", t["role"], ": ", t["text"], "\n")
+        it: dict[str, any] = h[i]
+        print("  ", it["role"], ": ", it["text"], "\n")
     }
+    print("【工具域 JSON】\n", json_dumps(t), "\n")
 }

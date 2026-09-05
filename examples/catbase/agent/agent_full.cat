@@ -1,32 +1,20 @@
 # =============================================================================
 # 简易 Agent 框架 · CatBase 完整版（面向官方 catbasecc）
 # -----------------------------------------------------------------------------
-# 四大件 + 持久化：
-#   1) agent loop    —— 理解 -> 意图 -> 行动(工具) -> 回复 -> 记忆
-#   2) 意图识别      —— 关键词打分规则分类器 + 参数抽取
-#   3) memory        —— 短时(对话历史) + 长时(事实)，落盘 memory.json
-#   4) context       —— 每轮组装 system/长期记忆/最近对话/工具结果
-# 工具域是一个迷你书库（books.json 落盘），可平滑换成任何能力。
-# 生成回复默认用规则；接入真实 LLM 时替换 generate_reply()（见文章第 6 节）。
-# 子集演示版（可直接用 JimLang 跑）见 examples/catbase/agent_demo.cat
+# 与 agent_llm_demo.cat 同一套“领域无关”设计：
+#   框架 = agent loop + 意图识别 + memory(短/长时) + context 组装 + 行动层
+#   业务 = 仅通过“行动层(run_tool)”挂接；这里示例挂“待办清单(todo)”，
+#          换成你的领域只需替换 run_tool 的分支与 tools_doc()。
+# 差异：官方版用 规则大脑(离线) + input 交互 + File/JSON 持久化；
+#       接入真实 LLM 时把 detect_brain 换成 http_post 调用即可（见文章第 6 节）。
 # =============================================================================
 
-BOOKS_FILE: str = "books.json"
-MEM_FILE: str = "memory.json"
+MEM_FILE: str = "agent_memory.json"
+TODO_FILE: str = "todo.json"
 
 # ---------------------------------------------------------------------------
-# 小工具：字符串基础件（用官方示例验证过的切片语法 s[i:j] 实现）
+# 字符串基础件（用官方示例验证过的切片语法 s[i:j] 实现）
 # ---------------------------------------------------------------------------
-
-def pos_of(s: str, ch: str) -> int {
-    for i in range(0, len(s)) {
-        sub: str = s[i:i + 1]
-        if sub == ch {
-            return i
-        }
-    }
-    return -1
-}
 
 def sub_pos(s: str, sub: str) -> int {
     n: int = len(s)
@@ -46,180 +34,6 @@ def sub_pos(s: str, sub: str) -> int {
     return -1
 }
 
-def sub_between(s: str, opench: str, closech: str) -> str {
-    a: int = pos_of(s, opench)
-    b: int = pos_of(s, closech)
-    if a < 0 {
-        return ""
-    }
-    if b <= a {
-        return ""
-    }
-    return s[a + 1:b]
-}
-
-# ---------------------------------------------------------------------------
-# 工具域：迷你书库（JSON 落盘）
-# ---------------------------------------------------------------------------
-
-def new_store() -> dict[str, any] {
-    return { "next_id": 1, "books": [] }
-}
-
-def load_store(path: str) -> dict[str, any] {
-    f: File = file(path, "r")
-    content: str = f.read()
-    f.close()
-    if content == "" {
-        return new_store()
-    }
-    raw: dict[str, any] = json_loads(content)
-    try {
-        _t: any = raw["books"]
-    } except {
-        raw["books"] = []
-    }
-    return raw
-}
-
-def save_store(st: dict[str, any], path: str) {
-    fw: File = file(path, "w")
-    fw.write(json_dumps(st))
-    fw.close()
-}
-
-def seed_store(s: dict[str, any]) {
-    if len(s["books"]) > 0 {
-        return
-    }
-    b1: dict[str, any] = { "id": 1, "title": "三体", "author": "刘慈欣", "copies": 2, "borrowed": 0 }
-    b2: dict[str, any] = { "id": 2, "title": "深入理解计算机系统", "author": "Bryant", "copies": 1, "borrowed": 0 }
-    b3: dict[str, any] = { "id": 3, "title": "小王子", "author": "圣埃克苏佩里", "copies": 3, "borrowed": 0 }
-    s["books"].append(b1)
-    s["books"].append(b2)
-    s["books"].append(b3)
-    s["next_id"] = 4
-}
-
-def tool_list(s: dict[str, any]) -> str {
-    books: list[any] = s["books"]
-    parts: str = ""
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        avail: int = int(str(b.get("copies", 0))) - int(str(b.get("borrowed", 0)))
-        parts = parts + "#" + str(b.get("id", 0)) + " 《" + str(b.get("title", "")) + "》 " + str(b.get("author", "")) + " 可借" + str(avail) + "\n"
-    }
-    return parts
-}
-
-def tool_find(s: dict[str, any], kw: str) -> str {
-    books: list[any] = s["books"]
-    out: str = ""
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        title: str = str(b.get("title", ""))
-        if sub_pos(title, kw) >= 0 {
-            out = out + "找到： #" + str(b.get("id", 0)) + " 《" + title + "》\n"
-        }
-    }
-    if out == "" {
-        out = "没有找到包含“" + kw + "”的书\n"
-    }
-    return out
-}
-
-def find_index(s: dict[str, any], nid: int) -> int {
-    books: list[any] = s["books"]
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        if int(str(b.get("id", 0))) == nid {
-            return i
-        }
-    }
-    return -1
-}
-
-def tool_borrow(s: dict[str, any], nid: int) -> str {
-    idx: int = find_index(s, nid)
-    if idx < 0 {
-        return "没有编号 " + str(nid) + " 的书"
-    }
-    b: dict[str, any] = s["books"][idx]
-    borrowed: int = int(str(b.get("borrowed", 0)))
-    copies: int = int(str(b.get("copies", 0)))
-    if borrowed >= copies {
-        return "《" + str(b.get("title", "")) + "》暂无剩余可借"
-    }
-    b["borrowed"] = borrowed + 1
-    return "借出成功：《" + str(b.get("title", "")) + "》"
-}
-
-def tool_return(s: dict[str, any], nid: int) -> str {
-    idx: int = find_index(s, nid)
-    if idx < 0 {
-        return "没有编号 " + str(nid) + " 的书"
-    }
-    b: dict[str, any] = s["books"][idx]
-    borrowed: int = int(str(b.get("borrowed", 0)))
-    if borrowed <= 0 {
-        return "《" + str(b.get("title", "")) + "》没有被借出"
-    }
-    b["borrowed"] = borrowed - 1
-    return "还书成功：《" + str(b.get("title", "")) + "》"
-}
-
-def tool_stats(s: dict[str, any]) -> str {
-    books: list[any] = s["books"]
-    total: int = 0
-    br: int = 0
-    for i in range(0, len(books)) {
-        b: dict[str, any] = books[i]
-        total = total + int(str(b.get("copies", 0)))
-        br = br + int(str(b.get("borrowed", 0)))
-    }
-    return "馆藏种类=" + str(len(books)) + " 总册数=" + str(total) + " 借出=" + str(br)
-}
-
-# ---------------------------------------------------------------------------
-# 1) 意图识别：规则表 + 关键词打分；find 意图抓书名，借/还抓编号
-# ---------------------------------------------------------------------------
-
-def detect_intent(msg: str) -> dict[str, any] {
-    rules: list[any] = [
-        { "name": "list",  "keys": ["有哪些书", "列出", "都有什么书", "列表"] },
-        { "name": "find",  "keys": ["找", "查一下", "有没有", "搜索"] },
-        { "name": "borrow", "keys": ["借", "借阅"] },
-        { "name": "ret",   "keys": ["还", "归还"] },
-        { "name": "stats", "keys": ["统计", "多少本", "馆藏情况"] },
-        { "name": "quit",  "keys": ["退出", "再见", "拜拜"] }
-    ]
-    best: str = "help"
-    bestScore: int = 0
-    for i in range(0, len(rules)) {
-        r: dict[str, any] = rules[i]
-        ks: list[any] = r["keys"]
-        score: int = 0
-        for j in range(0, len(ks)) {
-            kw: str = str(ks[j])
-            if sub_pos(msg, kw) >= 0 {
-                score = score + 1
-            }
-        }
-        if score > bestScore {
-            bestScore = score
-            best = str(r["name"])
-        }
-    }
-    intent: dict[str, any] = {}
-    intent["name"] = best
-    if best == "find" {
-        intent["kw"] = sub_between(msg, "《", "》")
-    } else {
-        intent["param"] = extract_number(msg)
-    }
-    return intent
-}
-
 def extract_number(msg: str) -> int {
     digit: str = ""
     for i in range(0, len(msg)) {
@@ -237,57 +51,169 @@ def extract_number(msg: str) -> int {
 }
 
 # ---------------------------------------------------------------------------
-# 2) 执行工具（行动层：意图名 -> 能力）
+# 行动层（示例领域：待办清单；替换这里 = 换成你的业务）
 # ---------------------------------------------------------------------------
 
-def help_text() -> str {
-    return "我可以：\n  1. 列出馆藏：有哪些书\n  2. 查询：有没有《书名》\n  3. 借书：借 1（编号）\n  4. 还书：还 1\n  5. 统计：馆藏情况\n  6. 退出：再见"
+def new_todos() -> dict[str, any] {
+    return { "next_id": 1, "items": [] }
 }
 
-def run_tool(s: dict[str, any], intent: dict[str, any]) -> str {
-    name: str = str(intent["name"])
-    if name == "list" {
-        return tool_list(s)
+def load_todos(path: str) -> dict[str, any] {
+    f: File = file(path, "r")
+    content: str = f.read()
+    f.close()
+    if content == "" {
+        return new_todos()
     }
-    if name == "stats" {
-        return tool_stats(s)
+    raw: dict[str, any] = json_loads(content)
+    try {
+        _t: any = raw["items"]
+    } except {
+        raw["items"] = []
     }
-    if name == "find" {
-        return tool_find(s, str(intent["kw"]))
-    }
-    if name == "borrow" {
-        return tool_borrow(s, int(str(intent["param"])))
-    }
-    if name == "ret" {
-        return tool_return(s, int(str(intent["param"])))
-    }
-    return help_text()
+    return raw
 }
 
-# ---------------------------------------------------------------------------
-# 3) 生成回复（可替换为 LLM，见文章第 6 节）
-# ---------------------------------------------------------------------------
+def save_todos(t: dict[str, any], path: str) {
+    fw: File = file(path, "w")
+    fw.write(json_dumps(t))
+    fw.close()
+}
 
-def generate_reply(intent: dict[str, any], result: str) -> str {
-    name: str = str(intent["name"])
-    if name == "help" {
-        return "没太明白，我可以帮你：\n" + result
-    }
-    if name == "quit" {
-        return "好的，再见啦"
-    }
-    if name == "find" {
-        kw: str = str(intent["kw"])
-        if kw == "" {
-            return "请带上书名，例如：有没有《三体》？" + "\n" + result
+def todo_add(t: dict[str, any], text: str) -> str {
+    nid: int = int(str(t.get("next_id", 1)))
+    item: dict[str, any] = {}
+    item["id"] = nid
+    item["text"] = text
+    item["done"] = false
+    t["items"].append(item)
+    t["next_id"] = nid + 1
+    return "已添加待办 #" + str(nid) + "：" + text
+}
+
+def find_item(t: dict[str, any], nid: int) -> int {
+    items: list[any] = t["items"]
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        if int(str(it.get("id", 0))) == nid {
+            return i
         }
+    }
+    return -1
+}
+
+def todo_list(t: dict[str, any]) -> str {
+    items: list[any] = t["items"]
+    if len(items) == 0 {
+        return "当前没有待办"
+    }
+    out: str = ""
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        mark: str = "x"
+        if int(str(it.get("done", 0))) == 0 {
+            mark = " "
+        }
+        out = out + "[" + mark + "] #" + str(it.get("id", 0)) + " " + str(it.get("text", "")) + "\n"
+    }
+    return out
+}
+
+def todo_done(t: dict[str, any], nid: int) -> str {
+    idx: int = find_item(t, nid)
+    if idx < 0 {
+        return "没有编号 " + str(nid) + " 的待办"
+    }
+    it: dict[str, any] = t["items"][idx]
+    it["done"] = true
+    return "已完成 #" + str(nid) + "：" + str(it.get("text", ""))
+}
+
+def todo_del(t: dict[str, any], nid: int) -> str {
+    idx: int = find_item(t, nid)
+    if idx < 0 {
+        return "没有编号 " + str(nid) + " 的待办"
+    }
+    it: dict[str, any] = t["items"][idx]
+    t["items"].pop(idx)
+    return "已删除 #" + str(nid) + "：" + str(it.get("text", ""))
+}
+
+# ---------------------------------------------------------------------------
+# 大脑：规则版 detect_brain（离线、可解释）；换 LLM 时替换本函数
+# ---------------------------------------------------------------------------
+
+def detect_brain(user_msg: str) -> dict[str, any] {
+    act: dict[str, any] = {}
+    if sub_pos(user_msg, "记") >= 0 {
+        if sub_pos(user_msg, "待办") >= 0 {
+            act["intent"] = "todo_add"
+            act["text"] = sub_after(user_msg, "：")
+            if str(act["text"]) == "" {
+                act["text"] = sub_after(user_msg, "记")
+            }
+            return act
+        }
+    }
+    if sub_pos(user_msg, "清单") >= 0 {
+        act["intent"] = "todo_list"
+        return act
+    }
+    if sub_pos(user_msg, "完成") >= 0 {
+        act["intent"] = "todo_done"
+        act["id"] = extract_number(user_msg)
+        return act
+    }
+    if sub_pos(user_msg, "删") >= 0 {
+        act["intent"] = "todo_del"
+        act["id"] = extract_number(user_msg)
+        return act
+    }
+    if sub_pos(user_msg, "再见") >= 0 {
+        act["intent"] = "bye"
+        act["say"] = "再见！"
+        return act
+    }
+    act["intent"] = "help"
+    act["say"] = "我可以帮你记待办。试试：记一条待办：xxx / 看看清单 / 完成第 1 条 / 删第 1 条"
+    return act
+}
+
+def sub_after(s: str, kw: str) -> str {
+    p: int = sub_pos(s, kw)
+    if p < 0 {
+        return ""
+    }
+    return s[p + 1:len(s)]
+}
+
+def run_tool(t: dict[str, any], act: dict[str, any]) -> str {
+    name: str = str(act["intent"])
+    if name == "todo_add" {
+        return todo_add(t, str(act["text"]))
+    }
+    if name == "todo_list" {
+        return todo_list(t)
+    }
+    if name == "todo_done" {
+        return todo_done(t, int(str(act["id"])))
+    }
+    if name == "todo_del" {
+        return todo_del(t, int(str(act["id"])))
+    }
+    return ""
+}
+
+def generate_reply(act: dict[str, any], result: str) -> str {
+    name: str = str(act["intent"])
+    if result != "" {
         return result
     }
-    return result
+    return str(act.get("say", "没太明白，再说一次？"))
 }
 
 # ---------------------------------------------------------------------------
-# 4) 记忆（memory）与上下文（context）
+# 记忆（memory）与上下文（context）
 # ---------------------------------------------------------------------------
 
 def new_memory() -> dict[str, any] {
@@ -324,7 +250,6 @@ def save_memory(mem: dict[str, any], path: str) {
 def remember(mem: dict[str, any], role: str, text: str) {
     turn: dict[str, any] = { "role": role, "text": text }
     mem["history"].append(turn)
-    # 短时记忆裁剪：只保留最近 6 条
     if len(mem["history"]) > 6 {
         keep: list[any] = []
         h: list[any] = mem["history"]
@@ -336,22 +261,8 @@ def remember(mem: dict[str, any], role: str, text: str) {
     }
 }
 
-def note_fact(mem: dict[str, any], fact: str) {
-    exists: int = 0
-    fs: list[any] = mem["facts"]
-    for i in range(0, len(fs)) {
-        if str(fs[i]) == fact {
-            exists = 1
-        }
-    }
-    if exists == 0 {
-        mem["facts"].append(fact)
-    }
-}
-
-def build_context(mem: dict[str, any], intent: dict[str, any], tool_result: str) -> str {
-    ctx: str = "【系统】你是图书馆助手，请根据工具结果友好回答。\n"
-    ctx = ctx + "【长期记忆】\n"
+def build_context(mem: dict[str, any], act: dict[str, any], result: str) -> str {
+    ctx: str = "【系统】你是通用 agent“小助手”。\n【长期记忆】\n"
     fs: list[any] = mem["facts"]
     for i in range(0, len(fs)) {
         ctx = ctx + "  - " + str(fs[i]) + "\n"
@@ -362,67 +273,55 @@ def build_context(mem: dict[str, any], intent: dict[str, any], tool_result: str)
         t: dict[str, any] = h[i]
         ctx = ctx + "  " + str(t["role"]) + ": " + str(t["text"]) + "\n"
     }
-    ctx = ctx + "【本轮】意图=" + str(intent["name"]) + "，工具返回=" + tool_result + "\n"
+    ctx = ctx + "【本轮】intent=" + str(act["intent"]) + "，工具返回=" + result + "\n"
     return ctx
 }
 
 # ---------------------------------------------------------------------------
-# 5) agent loop（一轮 = 记忆 + 意图 + 行动 + 上下文 + 回复 + 再记忆）
+# agent loop
 # ---------------------------------------------------------------------------
 
-def run_turn(s: dict[str, any], mem: dict[str, any], user_msg: str) -> str {
+def run_turn(t: dict[str, any], mem: dict[str, any], user_msg: str) -> str {
     remember(mem, "user", user_msg)
-    intent: dict[str, any] = detect_intent(user_msg)
-    result: str = run_tool(s, intent)
-
-    ctx: str = build_context(mem, intent, result)
+    act: dict[str, any] = detect_brain(user_msg)
+    result: str = run_tool(t, act)
+    ctx: str = build_context(mem, act, result)
     print("── 本轮上下文 ──────────────────────────\n")
     print(ctx)
     print("────────────────────────────────────────\n")
-
-    reply: str = generate_reply(intent, result)
+    reply: str = generate_reply(act, result)
     remember(mem, "assistant", reply)
-
-    # 长时记忆：借书成功记一笔
-    if str(intent["name"]) == "borrow" {
-        if sub_pos(reply, "借出成功") >= 0 {
-            note_fact(mem, "最近借了《" + sub_between(reply, "《", "》") + "》")
-        }
-    }
     return reply
 }
 
 def main(args: list[str]) {
-    s: dict[str, any] = new_store()
+    t: dict[str, any] = new_todos()
     mem: dict[str, any] = new_memory()
     try {
-        s = load_store(BOOKS_FILE)
+        t = load_todos(TODO_FILE)
         mem = load_memory(MEM_FILE)
-        print("已恢复书库与记忆\n")
+        print("已恢复待办与记忆\n")
     } except {
-        s = new_store()
+        t = new_todos()
         mem = new_memory()
-        seed_store(s)
-        print("新会话开始\n")
     }
-    seed_store(s)
 
-    print("========== 图书助手（CatBase Agent）==========\n")
-    print("直接说需求即可，例如：有哪些书 / 有没有《三体》/ 借 1 / 还 1 / 再见\n")
+    print("========== 小助手（CatBase Agent · 领域无关）==========\n")
+    print("直接说需求：记一条待办：xxx / 看看清单 / 完成第 1 条 / 删第 1 条 / 再见\n")
 
     while true {
         user_msg: str = input("你：")
         if user_msg == "" {
             continue
         }
-        intent: dict[str, any] = detect_intent(user_msg)
-        if str(intent["name"]) == "quit" {
-            save_store(s, BOOKS_FILE)
+        act: dict[str, any] = detect_brain(user_msg)
+        if str(act["intent"]) == "bye" {
+            save_todos(t, TODO_FILE)
             save_memory(mem, MEM_FILE)
-            print("助手：好的，再见啦（已保存书库与记忆）\n")
+            print("小助手：再见（已保存待办与记忆）\n")
             break
         }
-        reply: str = run_turn(s, mem, user_msg)
-        print("助手：", reply, "\n")
+        reply: str = run_turn(t, mem, user_msg)
+        print("小助手：", reply, "\n")
     }
 }
