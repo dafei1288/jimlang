@@ -1,0 +1,31 @@
+# CatBase -> JimLang 兼容演示：控制流
+# for x in range(...) / if-else / while
+
+def main(args: list[str]) {
+    fruits: list[str] = ["apple", "banana", "orange"]
+    count: int = 0
+
+    for i in range(0, len(fruits)) {
+        count = count + 1
+        print("fruit[", i, "]=", fruits[i], "\n")
+    }
+    print("count=", count, "\n")
+
+    # 预声明的循环变量
+    j: int = 0
+    for j in range(1, 4) {
+        print("j=", j, "\n")
+    }
+
+    x: int = 10
+    if x > 5 {
+        print("big\n")
+    } else {
+        print("small\n")
+    }
+
+    while count > 0 {
+        count = count - 1
+    }
+    print("done count=", count, "\n")
+}

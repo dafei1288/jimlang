@@ -1,0 +1,6 @@
+# CatBase -> JimLang 兼容演示：Hello world
+# 运行: bin/jimlang.cmd examples/catbase/hello.cat
+
+def main(args: list[str]) {
+    print("Hello world!\n")
+}

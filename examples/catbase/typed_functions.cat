@@ -1,0 +1,25 @@
+# CatBase -> JimLang 兼容演示：强类型变量 / 函数 / 类型转换
+# 顶层全局变量(带类型注解)
+PI: float = 3.14
+COUNT: int = 100
+
+def add(a: int, b: int) -> int {
+    return a + b
+}
+
+def main(args: list[str]) {
+    total: int = add(COUNT, 23)
+    print("total=", total, "\n")
+
+    s: str = "123"
+    n: int = int(s)
+    print("n=", n, "\n")
+
+    f: float = float(n)
+    print("f=", f, "\n")
+
+    b: bool = bool(n)
+    print("b=", b, "\n")
+
+    print("pi=", PI, "\n")
+}

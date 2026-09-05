@@ -23,6 +23,14 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("PRINT");
     // strings
     SYS_FUNCTION_NAMES.add("LEN");
+    // type-conversion builtins (CatBase compat: int()/float()/str()/bool())
+    SYS_FUNCTION_NAMES.add("INT");
+    SYS_FUNCTION_NAMES.add("FLOAT");
+    SYS_FUNCTION_NAMES.add("STR");
+    SYS_FUNCTION_NAMES.add("BOOL");
+    // CatBase-style variadic print: cat_print(a, b, c) prints each arg with no
+    // separator and no trailing newline (caller passes "\n" explicitly).
+    SYS_FUNCTION_NAMES.add("CAT_PRINT");
     SYS_FUNCTION_NAMES.add("TOUPPERCASE");
     SYS_FUNCTION_NAMES.add("UPPER");
     SYS_FUNCTION_NAMES.add("TOLOWERCASE");
@@ -88,6 +96,17 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("DB_QUERY_STREAM");
   }
 
+  // Some builtin names cannot be Java method names (int/float are keywords),
+  // and the CatBase dialect spells them differently. Keep the public
+  // identifier as-is and translate to the actual Java method at dispatch time.
+  private static final java.util.Map<String, String> CATBASE_ALIAS = java.util.Map.of(
+      "int", "to_int",
+      "float", "to_float",
+      "str", "to_str",
+      "bool", "to_bool",
+      "boolean", "to_bool"
+  );
+
   public static boolean isSysFunction(String functionName){
     if(functionName == null) return false;
     return SYS_FUNCTION_NAMES.contains(functionName.toUpperCase(Locale.ROOT)) || hasMethod(functionName);
@@ -96,23 +115,26 @@ public class Funcall {
   public static Object exec(String functionName, List<Object> params){
     Funcall f = new Funcall();
     int argc = (params == null) ? 0 : params.size();
+    // resolve aliases first (e.g. int -> to_int) so reflection finds the method
+    String fn = CATBASE_ALIAS.getOrDefault(functionName, functionName);
 
     // 1) prefer exact match by name (case sensitive) and parameter count
+    //    (varargs methods are handled in step 3 so their params are adapted)
     Method method = Arrays.stream(f.getClass().getMethods())
-        .filter(m -> m.getName().equals(functionName) && m.getParameterCount() == argc)
+        .filter(m -> !m.isVarArgs() && m.getName().equals(fn) && m.getParameterCount() == argc)
         .findFirst().orElse(null);
 
     // 2) fallback: case-insensitive exact parameter count
     if(method == null){
       method = Arrays.stream(f.getClass().getMethods())
-          .filter(m -> m.getName().equalsIgnoreCase(functionName) && m.getParameterCount() == argc)
+          .filter(m -> !m.isVarArgs() && m.getName().equalsIgnoreCase(fn) && m.getParameterCount() == argc)
           .findFirst().orElse(null);
     }
 
     // 3) varargs support: find varargs method and adapt arguments
     if (method == null) {
       Method varMethod = Arrays.stream(f.getClass().getMethods())
-          .filter(m -> m.getName().equalsIgnoreCase(functionName) && m.isVarArgs())
+          .filter(m -> m.getName().equalsIgnoreCase(fn) && m.isVarArgs())
           .findFirst().orElse(null);
       if (varMethod != null) {
         try {
@@ -189,9 +211,52 @@ public class Funcall {
   // ------------- built-ins: print -------------
   public void println(Object obj){ System.out.println(obj); }
   public void print(Object obj){ System.out.print(obj); }
+  // CatBase dialect: print(a, b, c, ...) concatenates args (no separator,
+  // no trailing newline). CatBase sources pass an explicit "\n" argument.
+  public void cat_print(Object... objs){
+    if (objs == null) return;
+    StringBuilder sb = new StringBuilder();
+    for (Object o : objs) { if (o == null) { sb.append("None"); } else { sb.append(o); } }
+    System.out.print(sb.toString());
+  }
+  // ---- type conversions (CatBase int()/float()/str()/bool()) ----
+  public Integer to_int(Object o){
+    if (o == null) return 0;
+    if (o instanceof Number n) return (int) n.longValue();
+    if (o instanceof Boolean b) return b ? 1 : 0;
+    String s = asString(o).trim();
+    try { return Integer.parseInt(s); }
+    catch (Exception e1) {
+      try { return (int) Math.floor(Double.parseDouble(s)); }
+      catch (Exception e2) { throw new RuntimeException("Cannot convert '" + o + "' to int"); }
+    }
+  }
+  public Double to_float(Object o){
+    if (o == null) return 0.0;
+    if (o instanceof Number n) return n.doubleValue();
+    if (o instanceof Boolean b) return b ? 1.0 : 0.0;
+    try { return Double.parseDouble(asString(o).trim()); }
+    catch (Exception e) { throw new RuntimeException("Cannot convert '" + o + "' to float"); }
+  }
+  public String to_str(Object o){ return o == null ? "None" : String.valueOf(o); }
+  public Boolean to_bool(Object o){
+    if (o == null) return false;
+    if (o instanceof Boolean b) return b;
+    if (o instanceof Number n) return n.doubleValue() != 0.0;
+    String s = asString(o).trim();
+    if (s.equalsIgnoreCase("true") || s.equals("1") || s.equalsIgnoreCase("yes") || s.equalsIgnoreCase("on")) return true;
+    if (s.equalsIgnoreCase("false") || s.equals("0") || s.equalsIgnoreCase("no") || s.equalsIgnoreCase("off") || s.isEmpty()) return false;
+    return !s.isEmpty();
+  }
 
   // ------------- built-ins: string -------------
-  public Integer len(Object s){ return asString(s).length(); }
+  public Integer len(Object s){
+    if (s instanceof java.util.List) return ((java.util.List<?>) s).size();
+    if (s instanceof java.util.Map) return ((java.util.Map<?, ?>) s).size();
+    if (s instanceof Object[]) return ((Object[]) s).length;
+    if (s == null) return 0;
+    return asString(s).length();
+  }
   public String toUpperCase(Object s){ return asString(s).toUpperCase(Locale.ROOT); }
   public String upper(Object s){ return toUpperCase(s); }
   public String toLowerCase(Object s){ return asString(s).toLowerCase(Locale.ROOT); }

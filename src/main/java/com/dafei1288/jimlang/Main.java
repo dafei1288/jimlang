@@ -72,8 +72,12 @@ public class Main {
         if (!Files.exists(Paths.get(scriptPath))) {
             throw new IOException("File not found: " + scriptPath);
         }
-        List<String> lines = Files.readAllLines(Paths.get(scriptPath));
-        String script = String.join("\n", lines);
+        String script = Files.readString(Paths.get(scriptPath));
+        // CatBase compatibility: .cat sources are translated to JimLang first.
+        boolean catMode = scriptPath.toLowerCase().endsWith(".cat");
+        if (catMode) {
+            script = com.dafei1288.jimlang.catbase.CatBaseCompat.translate(script);
+        }
         JimLangShell shell = new JimLangShell();
         Object result = shell.eval(script, scriptPath, null);
         if (result != null) {
@@ -88,6 +92,7 @@ public class Main {
         System.out.println("  jimlang --cli | -i       Start interactive REPL");
         System.out.println("  jimlang --eval \"code\"   Execute a one-liner code snippet");
         System.out.println("  jimlang <script.jim>     Execute a JimLang script file");
+        System.out.println("  jimlang <script.cat>     Execute a CatBase source file (auto-translated, Tier-1 subset)");
         System.out.println("  --trace                  Enable function call tracing");
         System.out.println("  --version, -v            Show version information");
         System.out.println("  --help, -h               Show this help message");

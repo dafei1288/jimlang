@@ -498,7 +498,12 @@ return new RuntimeException(sb.toString());
         List<JimLangParser.PairContext> pairs = ctx.pair();
         if (pairs != null) {
             for (JimLangParser.PairContext p : pairs) {
-                String key = p.identifier().getText();
+                String key = (p.identifier() != null)
+                        ? p.identifier().getText()
+                        : p.STRING_LITERAL().getText();
+                if (key.length() >= 2 && key.charAt(0) == '"' && key.charAt(key.length()-1) == '"') {
+                    key = key.substring(1, key.length()-1);
+                }
                 Object val = this.visit(p.expression());
                 map.put(key, val);
             }

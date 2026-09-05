@@ -1,0 +1,25 @@
+# CatBase -> JimLang 兼容演示：list/dict(字符串键) + JSON
+# CatBase 的 dict 字面量使用带引号的字符串键
+
+def main(args: list[str]) {
+    messages: list[dict[str, str]] = [
+        {
+            "role": "system",
+            "content": "answer directly"
+        },
+        {"role": "user", "content": "hello"}
+    ]
+    data: dict[str, any] = {
+        "model": "jim-1",
+        "messages": messages,
+        "max_tokens": 100,
+        "stream": True
+    }
+
+    s: str = json_dumps(data)
+    print(s)
+    print("\n")
+
+    print("model=", data["model"], " user=", messages[1]["content"], "\n")
+    print("len(messages)=", len(messages), "\n")
+}

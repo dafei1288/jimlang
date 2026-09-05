@@ -57,7 +57,7 @@ callSuffix: '(' parameterList? ')';
 // literals
 arrayLiteral: S_OPEN (expression (COMMA expression)*)? S_CLOSE ;
 objectLiteral: C_OPEN (pair (COMMA pair)*)? C_CLOSE ;
-pair: identifier COLON expression ;
+pair: ( identifier | STRING_LITERAL ) COLON expression ;
 
 constVar : NUMBER_LITERAL | STRING_LITERAL | ML_STRING_LITERAL | BOOLEAN_LITERAL ;
 
@@ -68,7 +68,11 @@ identifier: ID;
 
 sysfunction : 'print' | 'println' ;
 
-typeName :  'string' |  'number' |  'boolean' | 'int' | 'float' | 'array' | 'object' | qualifiedName ;
+typeName :  qualifiedName ;
+// NOTE: type annotations are advisory only. Using plain qualifiedName (instead of
+// reserved literals like 'int'/'string'/'boolean') keeps those words usable as
+// ordinary identifiers / conversion functions (e.g. int(x), str(x)), which the
+// CatBase compatibility layer relies on.
 qualifiedName: ID (DOT ID)* ;
 
 VAR                                 : 'var';
