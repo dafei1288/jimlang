@@ -204,9 +204,17 @@ def build_context(mem: dict[str, any], intent: dict[str, any], tool_result: str)
 运行 LLM 版前先准备 key（选一即可），再运行：
 
 ```bash
-export LLM_API_KEY=sk-...          # 或 DEEPSEEK_API_KEY，或用 load_env(".env")
+export LLM_API_KEY=sk-...                    # 方式一（优先级最高）
+printf 'LLM_API_KEY=sk-...
+' > .env        # 方式二：项目根目录 .env（demo 会自动加载）
 bin/jimlang.cmd examples/catbase/agent_llm_demo.cat
 ```
+
+> ⚠️ **key 优先级（易踩坑）**：`ask_llm` 按 `LLM_API_KEY → API_KEY → DEEPSEEK_API_KEY`
+> 的顺序取 key，显式覆盖参数 > `.env` 覆盖层 > 系统环境变量。若你的 shell 里残留了
+> 过期的 `DEEPSEEK_API_KEY`/`API_KEY`，即使其他地方配了新 key 也可能 401。
+> demo 启动时会先打印“将使用 …中的 key（尾号 …）”，对不上就按上面两种方式显式设置
+> `LLM_API_KEY` 即可；无 key 时会给出友好提示而不是抛长栈。
 
 **LLM 大脑版真实运行记录（DeepSeek deepseek-chat，节选）：**
 
