@@ -1,0 +1,74 @@
+{
+  "name": "JimLang",
+  "scopeName": "source.jimlang",
+  "fileTypes": ["jim", "mylang"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#builtins" },
+    { "include": "#functions" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        { "name": "comment.block.jimlang", "begin": "/\\*", "end": "\\*/" },
+        { "name": "comment.line.double-slash.jimlang", "match": "//.*$" }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.triple.single.jimlang",
+          "begin": "'''",
+          "end": "'''"
+        },
+        {
+          "name": "string.quoted.double.jimlang",
+          "begin": "\"",
+          "end": "\"",
+          "patterns": [ { "name": "constant.character.escape.jimlang", "match": "\\\\." } ]
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        { "name": "constant.numeric.jimlang", "match": "\\b\\d+(?:\\.\\d+)?\\b" }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        { "name": "keyword.declaration.jimlang", "match": "\\b(?:function|var|let|const)\\b" },
+        { "name": "keyword.control.jimlang", "match": "\\b(?:if|else|while|for|break|continue|return|new)\\b" },
+        { "name": "constant.language.boolean.jimlang", "match": "\\b(?:true|false)\\b" },
+        { "name": "storage.type.jimlang", "match": "\\b(?:string|number|boolean|int|float|array|object)\\b" }
+      ]
+    },
+    "builtins": {
+      "patterns": [
+        { "name": "support.function.builtin.jimlang", "match": "\\b(?:print|println)\\b(?=\\s*\\()" }
+      ]
+    },
+    "functions": {
+      "patterns": [
+        { "name": "entity.name.function.jimlang", "match": "(?<=\\bfunction\\s+)[A-Za-z_][A-Za-z0-9_]*" },
+        { "name": "entity.name.function.call.jimlang", "match": "\\b[A-Za-z_][A-Za-z0-9_]*\\b(?=\\s*\\()" }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        { "name": "keyword.operator.jimlang", "match": "==|!=|<=|>=|&&|\\|\\||[+\\-*/%^]" },
+        { "name": "punctuation.separator.jimlang", "match": ",|;|:" },
+        { "name": "punctuation.accessor.dot.jimlang", "match": "\\." },
+        { "name": "punctuation.section.brackets.begin.jimlang", "match": "\\[" },
+        { "name": "punctuation.section.brackets.end.jimlang", "match": "\\]" },
+        { "name": "punctuation.section.parens.begin.jimlang", "match": "\\(" },
+        { "name": "punctuation.section.parens.end.jimlang", "match": "\\)" },
+        { "name": "punctuation.section.braces.begin.jimlang", "match": "\\{" },
+        { "name": "punctuation.section.braces.end.jimlang", "match": "\\}" }
+      ]
+    }
+  }
+}

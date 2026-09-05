@@ -83,6 +83,9 @@ test-output/
 
 .claude
 
+# node dependencies (clients/vscode-jimlang)
+node_modules/
+
 ./examples/.env_llm
 examples/.env_llm
 build/
