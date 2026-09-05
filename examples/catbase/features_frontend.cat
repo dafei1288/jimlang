@@ -1,0 +1,57 @@
+# f-string 插值
+def greet(name: str, times: int = 1) -> str {
+    return f"hi {name} x{times}"
+}
+
+def main(args: list[str]) {
+    # 关键字实参 + 默认值
+    print(greet("jim"), "\n")
+    print(greet(name="cat", times=3), "\n")
+
+    # f-string 内联算术
+    a: int = 7
+    print(f"a={a} a*2={a * 2} neg={-a}\n")
+
+    # 递归
+    print("fib(10)=", fib(10), "\n")
+
+    # 负步长 range + 整数除法
+    for d in range(6, 0, -2) {
+        print("d=", d, "\n")
+    }
+    print("7/2=", 7 / 2, " 7.0/2=", 7.0 / 2, "\n")
+
+    # dict 写入与成员访问
+    cfg: dict[str, any] = {"name": "box", "n": 0}
+    cfg["n"] = cfg["n"] + 1
+    cfg["ok"] = True
+    print("cfg.name=", cfg["name"], " n=", cfg["n"], " ok=", cfg["ok"], "\n")
+
+    # 字符串方法
+    s: str = "  Hello.CatBase  "
+    print(s.strip().lower(), "|", s.upper(), "\n")
+
+    # and / or / not 逻辑
+    x: int = 10
+    if x > 0 and x < 20 {
+        print("range ok\n")
+    }
+    if not (x == 99) or x == 10 {
+        print("logic ok\n")
+    }
+
+    # list 字面量 for-in + None 检查
+    vals: list[int] = [1, 2, 3]
+    total2: int = 0
+    for v in vals {
+        total2 = total2 + v
+    }
+    print("total2=", total2, "\n")
+}
+
+def fib(n: int) -> int {
+    if n < 2 {
+        return n
+    }
+    return fib(n - 1) + fib(n - 2)
+}

@@ -1,5 +1,10 @@
 # 让 JimLang 运行 CatBase 程序：兼容层设计与实现
 
+> 📌 更新（本系列第 2 篇落地后）：`.cat` 的**默认运行器**已升级为基于
+> `CatBase.g4` 的**原生前端**（见 `doc/jimlang-catbase-frontend.md`），支持
+> f-string、关键字实参、dict 写入、方法链等 Tier-2 特性；本文描述的
+> `CatBaseCompat` 文本翻译器保留为离线 `cat2jim` 工具与实现参考。
+
 > 作者：JimLang 项目
 > 关键词：JimLang / CatBase / 跨语言 / 源码翻译 / 解释器
 > 目标读者：普通开发者（了解一门脚本语言如何“吃掉”另一门语言的语法）

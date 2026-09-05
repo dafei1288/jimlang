@@ -73,10 +73,13 @@ public class Main {
             throw new IOException("File not found: " + scriptPath);
         }
         String script = Files.readString(Paths.get(scriptPath));
-        // CatBase compatibility: .cat sources are translated to JimLang first.
+        // CatBase compatibility: .cat sources run through the native CatBase
+        // front-end (CatBase.g4 + CatBaseVistor), which reuses the JimLang
+        // builtin library (Funcall).
         boolean catMode = scriptPath.toLowerCase().endsWith(".cat");
         if (catMode) {
-            script = com.dafei1288.jimlang.catbase.CatBaseCompat.translate(script);
+            com.dafei1288.jimlang.catbase.CatBaseRunner.run(script, scriptPath);
+            return;
         }
         JimLangShell shell = new JimLangShell();
         Object result = shell.eval(script, scriptPath, null);
