@@ -190,82 +190,92 @@ def build_context(mem: dict[str, any], intent: dict[str, any], tool_result: str)
 └────────────┘    └─────────────┘    └──────────────┘
 ```
 
-这个框架的可替换点（也是将来“升级”的插槽）：
-- `detect_intent` —— 规则版可以换成 LLM 分类；
-- `run_tool` —— 想加新能力，就加工具 + 意图规则；
-- `generate_reply` —— 规则应答可以换成真 LLM（见下节）。
+这个框架的可替换点（也就是将来“升级大脑”的插槽）：
+- `detect_intent` / `run_tool` —— 想加能力就加工具与规则；
+- `generate_reply`（大脑）—— 可以是规则、也可以是**真实 LLM**（下节就是真·LLM 版本）。
 
-**运行方式二选一：**
+仓库现在提供**两个可运行的 agent**：
+
+| 文件 | 大脑 | 用途 |
+|---|---|---|
+| `examples/catbase/agent_demo.cat` | 规则（离线确定） | 脚手架：没网也能看管道；每轮打印“大脑看到的上下文” |
+| `examples/catbase/agent_llm_demo.cat` | **真实 LLM（ask_llm）** | 正式版：每轮由模型决策动作并组织话术（**已实测**） |
+
+运行 LLM 版前先准备 key（选一即可），再运行：
 
 ```bash
-# A. 官方 catbasecc（交互 + File/JSON 持久化）
-./bin/catbasecc examples/catbase/agent/agent_full.cat && ./agent_full
-# 退出时自动把书库写入 books.json、把记忆写入 memory.json
-
-# B. JimLang（子集版，离线确定性演示）
-bin/jimlang.cmd examples/catbase/agent_demo.cat      # Windows
-bin/jimlang.sh    examples/catbase/agent_demo.cat    # Unix
+export LLM_API_KEY=sk-...          # 或 DEEPSEEK_API_KEY，或用 load_env(".env")
+bin/jimlang.cmd examples/catbase/agent_llm_demo.cat
 ```
 
-子集版在本机**真实跑通**的结果（节选；每轮都会打印“大脑看到的上下文”，全量输出直接运行 `agent_demo.cat` 即可复现）：
+**LLM 大脑版真实运行记录（DeepSeek deepseek-chat，节选）：**
 
 ```
-========== 图书助手 · Agent Demo ==========
->>> 用户：你好
-── 上下文 ────────────────────────────
-【系统】你是图书馆助手，请根据工具结果友好回答。
-【长期记忆】
-【最近对话】
-  user: 你好
-【本轮】意图=help，工具返回=我可以： ...
-──────────────────────────────────────
-<<< 助手：没太明白～我可以： ...
->>> 用户：有哪些书     → 意图=list，工具列出 3 本
->>> 用户：借 1         → 意图=borrow，工具返回=借出成功：《三体》
->>> 用户：还 1         → 意图=ret，还书成功：《三体》
->>> 用户：统计         → 意图=stats，馆藏种类=3 总册数=6 借出=0
->>> 用户：再见         → 退出循环
-========== 会话结束 · 记忆快照 ==========
-【长期事实】 - 最近借了《三体》
-【记忆 JSON】
-{"facts":["最近借了《三体》"],"history":[{"role":"user","text":"还 1"},...]}
+========== 图书助手 · LLM 大脑版 ==========
+>>> 用户：你好呀
+┌─ 思考中(ask_llm) ─────────────────────
+│ 模型动作原始输出：{"intent":"help","say":"你好呀！我是图书助手，可以帮你查书、借书、还书或了解馆藏统计。请问有什么需要帮助的吗？"}
+│ 决策：intent=help
+└─────────────────────────────────────────
+<<< 助手：你好呀！我是图书助手，可以帮你查书、借书、还书或了解馆藏统计。请问有什么需要帮助的吗？
+
+>>> 用户：有哪些书？
+│ 模型动作原始输出：{"intent":"list"}
+│ 决策：intent=list
+│ 工具返回：#1 《三体》 刘慈欣 可借2 / #2 《深入理解计算机系统》 Bryant 可借1 / #3 《小王子》 ...
+<<< 助手：查询到三本相关书籍：《三体》有2本可借，《深入理解计算机系统》有1本可借，《小王子》有3本可借。
+
+>>> 用户：我想借《小王子》      → {"intent":"borrow","kw":"小王子"} → 借出成功：《小王子》
+<<< 助手：好的，《小王子》已经借出成功了。
+>>> 用户：还一下《小王子》      → {"intent":"ret","kw":"小王子"}   → 还书成功：《小王子》
+>>> 用户：统计一下馆藏情况      → {"intent":"stats"} → 馆藏种类=3 总册数=6 借出=0
+<<< 助手：馆内共有3种、6册藏书，目前全部在架，没有借出的记录。
+>>> 用户：谢谢，再见 → {"intent":"help","say":"不客气，再见！有需要随时找我。"}
+========== 记忆快照 ==========
+【长期事实】 - 最近借了《小王子》
+【最近对话】 user: 我想借《小王子》 / assistant: 好的... / ...
 ```
 
-注意看两处“活的”表现：
-- 每一轮 **context 里的【最近对话】在变长又在被裁剪**（始终 ≤6 条）——短时记忆在“翻页”；
-- 借书成功后，**长期记忆多了一条“最近借了《三体》”**——这是 agent 自己写下的档案，而不是写死在代码里的。
+看懂这段记录，你就看懂了一个最小但**真·由大模型驱动**的 agent：模型负责“听懂并决定干什么”（输出 JSON 动作），框架负责“把动作变成真实副作用”（借书/还书/统计），模型再负责“把结果说成人话”。那句“目前全部在架”不是模板，是模型读了工具返回值自己组织的——因为还书后 `借出=0`，它说得对。
 
 ---
 
-## 6. 阶段六（进阶）：把规则回复器换成真 LLM
+## 6. 大脑是怎么接上 LLM 的（真实接线，非示意）
 
-规则版的 `generate_reply` 只能把工具结果“复述”出来。要让它真正“会说话”，把它换成对 LLM 的一次 HTTP 调用即可，框架其它部分不用动。
-
-CatBase 官方自带 HTTP 与 JSON，调用一个 OpenAI 兼容的 `/chat/completions` 服务大致长这样（以官方文档的 `http_post` 与 `Response` 字段为准）：
+关键只有三处代码：
 
 ```catbase
-def llm_reply(ctx: str) -> str {
-    url: str = "http://127.0.0.1:8000/v1/chat/completions"
-    body: dict[str, any] = {
-        "model": "local-model",
-        "messages": [
-            { "role": "system",    "content": ctx },     # ← 我们的 build_context 直接喂进去
-            { "role": "user",      "content": "请根据上下文决定动作并回答" }
-        ],
-        "temperature": 0.2,
-        "stream": false
-    }
-    resp: Response = http_post(url, "", body, "", 60)
-    # 依官方 Response 文档取出 content 后返回即可
-    return extract_content(resp)
+# (1) 给模型看的“工具说明书 + 上下文”：
+def brain_prompt(mem, user_msg) -> str {
+    p: str = "你是“图书助手”智能体。可用工具（JSON 动作）：
+"
+    p = p + "{\"intent\":\"list\"} 列馆藏 ... "
+    p = p + "
+【长期记忆】..."   # 拼 mem["facts"]
+    p = p + "
+【最近对话】..."   # 拼 mem["history"]
+    p = p + "【本轮用户】" + user_msg
+    p = p + "
+只输出一行 JSON："
+    return p
 }
+
+# (2) 调用模型（JimLang 内置 ask_llm，OpenAI 兼容，DeepSeek 默认）：
+r: str = ask_llm(brain_prompt(mem, user_msg),
+                 { model: "deepseek-chat", temperature: 0.1, print: false })
+
+# (3) 把模型输出当 JSON 解析成动作：
+act: dict[str, any] = json_loads(r)
+if str(act.get("intent")) == "borrow" { ...执行工具... }
 ```
 
-然后只改一行：`generate_reply` 内部调用 `llm_reply(build_context(...))`。框架没变，能力升级——这就是“接口稳定、实现可换”的意义。
+三个设计点：
 
-> 真 LLM 时代，“意图识别”也可以交给 LLM：让它在回复 JSON `{"intent":"borrow","param":1}`，再用 `json_loads` 解析——我们的 `detect_intent` 接口照样不用动。规则版是“穷人版分类”，LLM 版是“开箱分类”，取舍在于可解释性、成本与延迟。
+1. **“工具”以 JSON 协议暴露给模型**（intent + 参数），模型只输出 JSON——这就是“函数调用(function calling)”的最朴素形态，任何支持文本生成的模型都能用，不依赖厂商专属 API；
+2. **两段式**：模型先“决策”（出 JSON 动作）→ 框架执行工具拿到真实结果 → 模型再“话术”（把结果润色成自然中文）。中间那格“工具返回”就是 agent 与纯聊天机器人的分水岭：回答长在证据上，而不是模型凭空编；
+3. **`ask_llm` 只是这座桥的 JimLang 实现**。官方 catbasecc 上同样的 JSON 动作协议用 `http_post` 打 OpenAI 兼容的 `/v1/chat/completions` 即可（按官方 `Response` 文档取内容），协议不变、只换“桥”。`agent_demo.cat`（规则大脑）则可以继续当“无网也能跑”的脚手架与回归基线。
 
----
+> 再深一步：意图识别也可以整个交给模型——让它在 JSON 里直接回 `{"intent":"borrow","kw":"小王子"}`（本版就是这么做的），规则分类器就退居为“备用/兜底”。取舍始终是：规则 = 快、可解释、零成本；模型 = 泛化、少维护关键词表。
 
 ## 7. 更远一步：这个框架能长成什么样
 
@@ -295,5 +305,6 @@ def llm_reply(ctx: str) -> str {
 Agent 不神秘：**循环是骨架，意图是耳朵，记忆是档案柜，上下文是工位卡，工具是手**。用 CatBase 搭这套，10 行能跑 loop，几十行能听懂话、记得住事，一百来行就有一个看得见、存得下、可插拔的框架——而把它换成真实 LLM，只差一次 HTTP 调用。
 
 代码位置：
-- 完整版：`examples/catbase/agent/agent_full.cat`
-- JimLang 可运行子集版：`examples/catbase/agent_demo.cat`
+- LLM 大脑版（JimLang，已实测）：`examples/catbase/agent_llm_demo.cat`（先 `export LLM_API_KEY`）
+- 规则脚手架（JimLang，离线可跑）：`examples/catbase/agent_demo.cat`
+- 官方 catbasecc 完整版（File/JSON 落盘 + input 交互）：`examples/catbase/agent/agent_full.cat`

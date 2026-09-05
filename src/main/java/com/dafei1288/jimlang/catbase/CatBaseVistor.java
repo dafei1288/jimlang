@@ -559,6 +559,19 @@ public class CatBaseVistor extends CatBaseBaseVisitor<Object> {
     /** value.method(args...) routed through the Funcall builtin library */
     private Object methodCall(Object base, String method, List<Object> args,
                               org.antlr.v4.runtime.ParserRuleContext ctx) {
+        // container helpers handled natively: dict.get(key[, default]) / dict.put(k, v)
+        if (base instanceof Map) {
+            if ("get".equals(method)) {
+                Object key = args.size() >= 1 ? args.get(0) : null;
+                Map<?, ?> m = (Map<?, ?>) base;
+                if (key != null && m.containsKey(key)) return m.get(key);
+                return args.size() >= 2 ? args.get(1) : null;
+            }
+            if ("put".equals(method) && args.size() >= 2) {
+                ((Map<Object, Object>) base).put(args.get(0), args.get(1));
+                return null;
+            }
+        }
         String fn = METHOD_ALIAS.get(method);
         if (fn == null && Funcall.isSysFunction(method)) fn = method;
         if (fn == null) {
