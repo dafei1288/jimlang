@@ -1,0 +1,262 @@
+# =============================================================================
+# 图书管理系统 (CatBase 完整版)
+# -----------------------------------------------------------------------------
+# 目标编译器：官方 catbasecc（Linux）。语法与写法对齐官方示例：
+#   - 数据模型：dict + JSON 文件存档（参考 examples/test_simple_json_manager.cat）
+#   - 文件 API：f: File = file(path, "r"/"w"); f.read() / f.write(...) / f.close()
+#   - JSON：json_dumps(dict) / json_loads(str)；dict .get(key, 默认) 方法
+#   - 类型转换：int(str(x)) / str(x)；try { } except { } 探测
+# 在 JimLang 里可直接体验的“子集版”见 examples/catbase/library_demo.cat
+# =============================================================================
+
+DATA_FILE: str = "books.json"
+
+# ---------------------------------------------------------------------------
+# 数据存取：book = {"id":.., "title":.., "author":.., "year":..,
+#                  "copies":.., "borrowed":..}
+# store = {"next_id": N, "books": [book, ...]}
+# ---------------------------------------------------------------------------
+
+def make_store() -> dict[str, any] {
+    return {"next_id": 1, "books": []}
+}
+
+def load_store(path: str) -> dict[str, any] {
+    content: str = ""
+    raw: dict[str, any] = {}
+    f: File = file(path, "r")
+    content = f.read()
+    f.close()
+    if content == "" {
+        return make_store()
+    }
+    raw = json_loads(content)
+    # 兼容缺字段的旧存档
+    try {
+        _t: any = raw["books"]
+    } except {
+        raw["books"] = []
+    }
+    try {
+        _t2: any = raw["next_id"]
+    } except {
+        raw["next_id"] = 1
+    }
+    return raw
+}
+
+def save_store(st: dict[str, any], path: str) {
+    text: str = json_dumps(st)
+    fw: File = file(path, "w")
+    fw.write(text)
+    fw.close()
+    print("已保存到 ", path, "\n")
+}
+
+# ---------------------------------------------------------------------------
+# 增删查改借还
+# ---------------------------------------------------------------------------
+
+def cmd_add(st: dict[str, any], title: str, author: str, year: int, copies: int) -> int {
+    nid: int = st["next_id"]
+    book: dict[str, any] = {}
+    book["id"] = nid
+    book["title"] = title
+    book["author"] = author
+    book["year"] = year
+    book["copies"] = copies
+    book["borrowed"] = 0
+    st["books"].append(book)
+    st["next_id"] = nid + 1
+    print("已添加 #", nid, " ", title, "\n")
+    return nid
+}
+
+def cmd_list(st: dict[str, any]) {
+    books: list[any] = st["books"]
+    print("\n编号 | 书名 | 作者 | 年份 | 馆藏 | 借出 | 可借\n")
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        avail: int = int(str(b.get("copies", 0))) - int(str(b.get("borrowed", 0)))
+        print(b.get("id", 0), "| ", b.get("title", ""), "| ", b.get("author", ""), "| ",
+              b.get("year", 0), "| ", b.get("copies", 0), "| ", b.get("borrowed", 0), "| ", avail, "\n")
+    }
+    print("共 ", len(books), " 种\n")
+}
+
+# ---------------------------------------------------------------------------
+# 字符串包含检测：用官方示例验证过的切片语法 s[i:j] 实现
+# ---------------------------------------------------------------------------
+
+def str_contains(s: str, kw: str) -> bool {
+    n: int = len(s)
+    k: int = len(kw)
+    if k == 0 {
+        return true
+    }
+    if k > n {
+        return false
+    }
+    for i in range(0, n - k + 1) {
+        sub: str = s[i:i + k]
+        if sub == kw {
+            return true
+        }
+    }
+    return false
+}
+
+def cmd_find(st: dict[str, any], kw: str) {
+    books: list[any] = st["books"]
+    hit: int = 0
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        title: str = str(b.get("title", ""))
+        author: str = str(b.get("author", ""))
+        if str_contains(title, kw) {
+            hit = hit + 1
+            print("命中：", b.get("id", 0), " ", title, "\n")
+        } else {
+            if str_contains(author, kw) {
+                hit = hit + 1
+                print("命中：", b.get("id", 0), " ", title, "\n")
+            }
+        }
+    }
+    if hit == 0 {
+        print("没有找到包含 “", kw, "” 的图书\n")
+    }
+}
+
+def find_index(st: dict[str, any], nid: int) -> int {
+    books: list[any] = st["books"]
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        if int(str(b.get("id", 0))) == nid {
+            return i
+        }
+    }
+    return -1
+}
+
+def cmd_borrow(st: dict[str, any], nid: int) {
+    idx: int = find_index(st, nid)
+    if idx < 0 {
+        print("没有编号 ", nid, " 的图书\n")
+        return
+    }
+    b: dict[str, any] = st["books"][idx]
+    copies: int = int(str(b.get("copies", 0)))
+    borrowed: int = int(str(b.get("borrowed", 0)))
+    if borrowed >= copies {
+        print("“", b.get("title", ""), "” 无可借副本\n")
+        return
+    }
+    b["borrowed"] = borrowed + 1
+    print("借出成功：", b.get("title", ""), "\n")
+}
+
+def cmd_return(st: dict[str, any], nid: int) {
+    idx: int = find_index(st, nid)
+    if idx < 0 {
+        print("没有编号 ", nid, " 的图书\n")
+        return
+    }
+    b: dict[str, any] = st["books"][idx]
+    borrowed: int = int(str(b.get("borrowed", 0)))
+    if borrowed <= 0 {
+        print("“", b.get("title", ""), "” 没有被借出\n")
+        return
+    }
+    b["borrowed"] = borrowed - 1
+    print("还书成功：", b.get("title", ""), "\n")
+}
+
+def cmd_remove(st: dict[str, any], nid: int) {
+    idx: int = find_index(st, nid)
+    if idx < 0 {
+        print("没有编号 ", nid, " 的图书\n")
+        return
+    }
+    b: dict[str, any] = st["books"][idx]
+    pop(st["books"], idx)
+    print("已删除：", b.get("title", ""), "\n")
+}
+
+def cmd_stats(st: dict[str, any]) {
+    books: list[any] = st["books"]
+    total: int = 0
+    borrowed: int = 0
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        total = total + int(str(b.get("copies", 0)))
+        borrowed = borrowed + int(str(b.get("borrowed", 0)))
+    }
+    print("馆藏种类=", len(books), " 总册数=", total, " 借出=", borrowed, " 可借=", total - borrowed, "\n")
+}
+
+def show_menu() {
+    print("\n================ 图书管理系统 ================\n")
+    print(" 1. 添加图书    2. 图书列表    3. 按关键词查询\n")
+    print(" 4. 借书        5. 还书        6. 删除图书\n")
+    print(" 7. 统计        0. 保存并退出\n")
+    print("===============================================\n")
+}
+
+def main(args: list[str]) {
+    st: dict[str, any] = {}
+    try {
+        st = load_store(DATA_FILE)
+        print("已加载存档（", len(st["books"]), " 种图书）\n")
+    } except {
+        print("没有存档，从空书库开始\n")
+        st = make_store()
+    }
+
+    while true {
+        show_menu()
+        opt: int = int(input("请选择功能："))
+        if opt == 0 {
+            save_store(st, DATA_FILE)
+            print("再见！\n")
+            break
+        }
+        if opt == 1 {
+            title: str = input("书名：")
+            author: str = input("作者：")
+            year: int = int(input("出版年份："))
+            copies: int = int(input("馆藏册数："))
+            cmd_add(st, title, author, year, copies)
+        } else {
+            if opt == 2 {
+                cmd_list(st)
+            } else {
+                if opt == 3 {
+                    kw: str = input("关键词：")
+                    cmd_find(st, kw)
+                } else {
+                    if opt == 4 {
+                        nid: int = int(input("图书编号："))
+                        cmd_borrow(st, nid)
+                    } else {
+                        if opt == 5 {
+                            nid = int(input("图书编号："))
+                            cmd_return(st, nid)
+                        } else {
+                            if opt == 6 {
+                                nid = int(input("图书编号："))
+                                cmd_remove(st, nid)
+                            } else {
+                                if opt == 7 {
+                                    cmd_stats(st)
+                                } else {
+                                    print("未知选项：", opt, "\n")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

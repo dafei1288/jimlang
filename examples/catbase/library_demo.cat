@@ -1,0 +1,155 @@
+# =============================================================================
+# 图书管理系统 · 子集演示版 (可直接用 jimlang 运行)
+# 说明：面向 JimLang 的 CatBase 前端（CatBase.g4 + CatBaseVistor），
+#       只用核心子集（list/dict/f-string/函数/控制流），无 File/input/class。
+# 完整版（官方 catbasecc：class + JSON 文件存档 + 菜单交互）见
+#   doc/jimlang-catbase-books.md 与 examples/catbase/library/library_full.cat
+# =============================================================================
+
+def new_store() -> dict[str, any] {
+    s: dict[str, any] = {
+        "next_id": 1,
+        "books": []
+    }
+    return s
+}
+
+def add_book(s: dict[str, any], title: str, author: str, year: int, copies: int) -> int {
+    id: int = s["next_id"]
+    book: dict[str, any] = {
+        "id": id,
+        "title": title,
+        "author": author,
+        "year": year,
+        "copies": copies,
+        "borrowed": 0
+    }
+    append(s["books"], book)
+    s["next_id"] = id + 1
+    return id
+}
+
+def show(s: dict[str, any]) {
+    print("id | 书名 | 作者 | 年份 | 馆藏 | 借出 | 可借\n")
+    books: list[any] = s["books"]
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        avail: int = b["copies"] - b["borrowed"]
+        print(b["id"], "|", b["title"], "|", b["author"], "|", b["year"], "|", b["copies"], "|", b["borrowed"], "|", avail, "\n")
+    }
+    print("共 ", len(books), " 本\n")
+}
+
+def find_book(s: dict[str, any], kw: str) -> bool {
+    books: list[any] = s["books"]
+    found: bool = false
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        if str(b["title"]).contains(kw) or str(b["author"]).contains(kw) {
+            print("命中：", b["id"], b["title"], "/", b["author"], "\n")
+            found = true
+        }
+    }
+    if not found {
+        print("没有找到包含 '", kw, "' 的图书\n")
+    }
+    return found
+}
+
+def borrow(s: dict[str, any], id: int) -> bool {
+    books: list[any] = s["books"]
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        if b["id"] == id {
+            if b["copies"] - b["borrowed"] > 0 {
+                b["borrowed"] = b["borrowed"] + 1
+                print("借出成功：", b["title"], "\n")
+                return true
+            }
+            print("无可借副本：", b["title"], "\n")
+            return false
+        }
+    }
+    print("没有 id=", id, " 的图书\n")
+    return false
+}
+
+def return_book(s: dict[str, any], id: int) -> bool {
+    books: list[any] = s["books"]
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        if b["id"] == id {
+            if b["borrowed"] > 0 {
+                b["borrowed"] = b["borrowed"] - 1
+                print("还书成功：", b["title"], "\n")
+                return true
+            }
+            print("该书没有被借出\n")
+            return false
+        }
+    }
+    print("没有 id=", id, " 的图书\n")
+    return false
+}
+
+def remove_book(s: dict[str, any], id: int) -> bool {
+    books: list[any] = s["books"]
+    keep: list[any] = []
+    removed: bool = false
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        if b["id"] == id {
+            removed = true
+            print("已删除：", b["title"], "\n")
+        } else {
+            append(keep, b)
+        }
+    }
+    s["books"] = keep
+    if not removed {
+        print("没有 id=", id, " 的图书\n")
+    }
+    return removed
+}
+
+def stats(s: dict[str, any]) {
+    books: list[any] = s["books"]
+    total: int = len(books)
+    copies: int = 0
+    borrowed: int = 0
+    for i in range(0, len(books)) {
+        b: dict[str, any] = books[i]
+        copies = copies + b["copies"]
+        borrowed = borrowed + b["borrowed"]
+    }
+    print("馆藏种类=", total, " 总册数=", copies, " 借出=", borrowed, " 可借=", copies - borrowed, "\n")
+}
+
+def main(args: list[str]) {
+    s: dict[str, any] = new_store()
+    add_book(s, "三体", "刘慈欣", 2008, 3)
+    add_book(s, "深入理解计算机系统", "Bryant", 2016, 2)
+    add_book(s, "Java 编程思想", "Bruce Eckel", 2006, 1)
+
+    print("=== 初始馆藏 ===\n")
+    show(s)
+    stats(s)
+
+    print("=== 借书 id=1、id=3 ==\n")
+    borrow(s, 1)
+    borrow(s, 3)
+
+    print("=== 查询「计算」 ===\n")
+    find_book(s, "计算")
+
+    print("=== 还书 id=1 ==\n")
+    return_book(s, 1)
+
+    print("=== 删除 id=2 ==\n")
+    remove_book(s, 2)
+
+    print("=== 最终馆藏 ===\n")
+    show(s)
+    print("=== 存档 JSON ===\n")
+    print(json_dumps(s), "\n")
+}

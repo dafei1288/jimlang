@@ -227,8 +227,15 @@ public class CatBaseVistor extends CatBaseBaseVisitor<Object> {
 
     @Override
     public Object visitBlock(CatBaseParser.BlockContext ctx) {
-        if (ctx.statementList() == null) return null;
-        return visit(ctx.statementList());
+        // blocks get a fresh scope per execution: a variable declared inside a
+        // loop body (e.g. `b: dict[...] = books[i]`) is per-iteration scoped
+        pushScope();
+        try {
+            if (ctx.statementList() == null) return null;
+            return visit(ctx.statementList());
+        } finally {
+            popScope();
+        }
     }
 
     // ------------------------------------------------------------------ lvalue
@@ -650,6 +657,7 @@ public class CatBaseVistor extends CatBaseBaseVisitor<Object> {
         METHOD_ALIAS.put("contains", "contains");
         METHOD_ALIAS.put("replace", "replace");
         METHOD_ALIAS.put("split", "split");
+        METHOD_ALIAS.put("append", "push");   // list.append(x) -> push(list, x)
     }
 
     /** range(stop) / range(start, stop) / range(start, stop, step) -> List */
@@ -693,6 +701,7 @@ public class CatBaseVistor extends CatBaseBaseVisitor<Object> {
             case "json_loads": return "json_decode";
             case "print":      return "cat_print";
             case "println":    return "cat_print";
+            case "append":     return "push";      // append(list, item) -> push(list, item)
             default:           return null;
         }
     }
