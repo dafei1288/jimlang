@@ -63,6 +63,8 @@ public class Funcall {
     SYS_FUNCTION_NAMES.add("FLOOR");
     SYS_FUNCTION_NAMES.add("CEIL");
     SYS_FUNCTION_NAMES.add("RANDOMRANGE");
+    // interactive stdin read (CatBase-compatible input([prompt]))
+    SYS_FUNCTION_NAMES.add("INPUT");
     // file
     SYS_FUNCTION_NAMES.add("FILE_READ");
     SYS_FUNCTION_NAMES.add("FILE_WRITE");
@@ -1236,6 +1238,35 @@ public class Funcall {
     return base;
   }
   @SuppressWarnings({"rawtypes","unchecked"})
+  private static volatile java.io.BufferedReader __stdin_reader;
+
+  private static java.io.BufferedReader stdinReader() {
+    if (__stdin_reader == null) {
+      __stdin_reader = new java.io.BufferedReader(
+          new java.io.InputStreamReader(System.in, StandardCharsets.UTF_8));
+    }
+    return __stdin_reader;
+  }
+
+  /** interactive input([prompt]) -> one line from standard input */
+  public String input(Object prompt){
+    if (prompt != null && !String.valueOf(prompt).isEmpty()) {
+      System.out.print(prompt);
+      System.out.flush();
+    }
+    java.io.Console c = System.console();
+    if (c != null) {
+      String line = c.readLine();
+      return line == null ? "" : line;
+    }
+    try {
+      String line = stdinReader().readLine();
+      return line == null ? "" : line;
+    } catch (java.io.IOException e) {
+      throw new RuntimeException("input(): " + e.getMessage(), e);
+    }
+  }
+
   public Object ask_llm(Object prompt){ return ask_llm(prompt, null); }
   @SuppressWarnings({"rawtypes","unchecked"})
   public Object ask_llm(Object prompt, Object overrides){

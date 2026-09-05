@@ -159,6 +159,7 @@ def build_context(mem, act, result) -> str {
 | `examples/catbase/agent_demo.cat` | 规则（离线） | `bin/jimlang.cmd examples/catbase/agent_demo.cat` |
 | `examples/catbase/agent_llm_demo.cat` | **真实 LLM（ask_llm）** | 先配 key 再 `bin/jimlang.cmd examples/catbase/agent_llm_demo.cat` |
 | `examples/catbase/agent/agent_full.cat` | 规则 + input/File 持久化 | 官方 `catbasecc` |
+| `examples/catbase/agent_cli.cat` | **LLM，交互式 CLI**（边输入边对话） | `bin/jimlang.cmd examples/catbase/agent_cli.cat` |
 
 LLM 版真实运行记录（DeepSeek deepseek-chat，实测）：
 
@@ -218,6 +219,20 @@ if str(act.get("intent")) == "todo_done" { run_tool(t, act) }
 3. **`ask_llm` 只是这座桥的 JimLang 实现**。官方 `catbasecc` 上用 `http_post` 打
    OpenAI 兼容的 `/v1/chat/completions` 即可，JSON 动作协议不变，只换“桥”
    （`agent_full.cat` 里默认规则大脑，接法见官方 `Response` 文档）。
+
+**想要“边输入边对话”？** 用交互式 CLI：`examples/catbase/agent_cli.cat`。它与上面
+LLM 版同一套框架，只是把固定对话脚本换成 `while true { input("你> ") ... }` 循环，
+每次你敲一行，它就经历一轮“记忆→决策→工具→回复”，说“再见/退出”或 `Ctrl+C` 结束：
+
+```bash
+bin/jimlang.cmd examples/catbase/agent_cli.cat
+你> 帮我记一条待办：周三交周报
+小助手> 好的，已经帮您记下周三交周报这件事了。
+你> 看看我的待办
+小助手> 周三需要提交周报。
+你> 再见
+小助手：再见！
+```
 
 key 优先级（易踩坑）：`ask_llm` 按 `LLM_API_KEY → API_KEY → DEEPSEEK_API_KEY` 取 key
 （显式覆盖 > `.env` > 系统环境变量）。demo 启动会打印“将使用 …中的 key（尾号 …）”。

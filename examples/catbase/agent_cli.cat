@@ -1,0 +1,270 @@
+# =============================================================================
+# Agent CLI · 交互式（可直接用 JimLang 运行，边输入边对话）
+# -----------------------------------------------------------------------------
+# 与 agent_llm_demo.cat 同一套领域无关框架（LLM 大脑 + 待办示例工具），
+# 区别：不再预置对话脚本，而是进入 REPL 式循环，由你逐行输入：
+#   bin/jimlang.cmd examples/catbase/agent_cli.cat
+# 每轮：input 读入 -> 记忆 -> ask_llm 决策(JSON 动作) -> 执行工具 -> ask_llm 润色
+# 退出：输入“再见 / 退出 / exit / quit”
+# 换业务：只改 run_tool 分支与 tools_doc()，框架与循环不动。
+# =============================================================================
+
+LLM_OPTS: dict[str, any] = {
+    "model": "deepseek-chat",
+    "temperature": 0.1,
+    "print": false
+}
+
+# ---------------------------------------------------------------------------
+# 工具层（示例领域：待办清单；替换这里 = 换成你的业务）
+# ---------------------------------------------------------------------------
+
+def new_todos() -> dict[str, any] {
+    return { "next_id": 1, "items": [] }
+}
+
+def todo_add(t: dict[str, any], text: str) -> str {
+    nid: int = t["next_id"]
+    item: dict[str, any] = { "id": nid, "text": text, "done": false }
+    append(t["items"], item)
+    t["next_id"] = nid + 1
+    return "已添加待办 #" + str(nid) + "：" + text
+}
+
+def todo_list(t: dict[str, any]) -> str {
+    items: list[any] = t["items"]
+    if len(items) == 0 {
+        return "当前没有待办"
+    }
+    out: str = ""
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        mark: str = "x"
+        if not it["done"] {
+            mark = " "
+        }
+        out = out + "[" + mark + "] #" + str(it["id"]) + " " + str(it["text"]) + "\n"
+    }
+    return out
+}
+
+def todo_done(t: dict[str, any], nid: int) -> str {
+    items: list[any] = t["items"]
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        if it["id"] == nid {
+            if it["done"] {
+                return "#" + str(nid) + " 已完成过了"
+            }
+            it["done"] = true
+            return "已完成 #" + str(nid) + "：" + str(it["text"])
+        }
+    }
+    return "没有编号 " + str(nid) + " 的待办"
+}
+
+def todo_del(t: dict[str, any], nid: int) -> str {
+    items: list[any] = t["items"]
+    for i in range(0, len(items)) {
+        it: dict[str, any] = items[i]
+        if it["id"] == nid {
+            keep: list[any] = []
+            for j in range(0, len(items)) {
+                if items[j] != it {
+                    append(keep, items[j])
+                }
+            }
+            t["items"] = keep
+            return "已删除 #" + str(nid) + "：" + str(it["text"])
+        }
+    }
+    return "没有编号 " + str(nid) + " 的待办"
+}
+
+# ---------------------------------------------------------------------------
+# 记忆
+# ---------------------------------------------------------------------------
+
+def new_memory() -> dict[str, any] {
+    return { "facts": [], "history": [] }
+}
+
+def remember(mem: dict[str, any], role: str, text: str) {
+    turn: dict[str, any] = { "role": role, "text": text }
+    append(mem["history"], turn)
+    if len(mem["history"]) > 8 {
+        keep: list[any] = []
+        h: list[any] = mem["history"]
+        start: int = len(h) - 8
+        for i in range(start, len(h)) {
+            append(keep, h[i])
+        }
+        mem["history"] = keep
+    }
+}
+
+# ---------------------------------------------------------------------------
+# 大脑：prompt -> ask_llm -> JSON 动作
+# ---------------------------------------------------------------------------
+
+def tools_doc() -> str {
+    d: str = "可用工具（用一行 JSON 表示动作，不要多余文字）：\n"
+    d = d + "- {\"intent\":\"todo_add\",\"text\":\"事项内容\"} 新增待办\n"
+    d = d + "- {\"intent\":\"todo_list\"} 查看全部待办\n"
+    d = d + "- {\"intent\":\"todo_done\",\"id\":编号} 完成某条待办\n"
+    d = d + "- {\"intent\":\"todo_del\",\"id\":编号} 删除某条待办\n"
+    d = d + "- {\"intent\":\"chat\",\"say\":\"自然回复\"} 闲聊/无法理解/无需工具时\n"
+    return d
+}
+
+def brain_prompt(mem: dict[str, any], user_msg: str) -> str {
+    p: str = "你是“小助手”，一个通用 agent。\n"
+    p = p + tools_doc()
+    p = p + "规则：只输出一行 JSON，不要代码块；涉及编号用真实编号。\n"
+    p = p + "\n【最近对话】\n"
+    h: list[any] = mem["history"]
+    for i in range(0, len(h)) {
+        t: dict[str, any] = h[i]
+        p = p + str(t["role"]) + ": " + str(t["text"]) + "\n"
+    }
+    p = p + "【本轮用户】" + user_msg + "\n"
+    p = p + "只输出 JSON："
+    return p
+}
+
+def parse_action(raw: str) -> dict[str, any] {
+    text: str = raw
+    if text.startsWith("```") {
+        pos: int = indexOf(text, "\n")
+        if pos >= 0 {
+            text = substring(text, pos + 1)
+        }
+        end: int = indexOf(text, "```")
+        if end >= 0 {
+            text = substring(text, 0, end)
+        }
+    }
+    trimmed: str = trim(text)
+    act: dict[str, any] = {}
+    if trimmed.startsWith("{") {
+        act = json_loads(trimmed)
+    } else {
+        act["intent"] = "chat"
+        act["say"] = trimmed
+    }
+    return act
+}
+
+def run_tool(t: dict[str, any], act: dict[str, any]) -> str {
+    intent: str = str(act.get("intent", "chat"))
+    if intent == "todo_add" {
+        return todo_add(t, str(act.get("text", "")))
+    }
+    if intent == "todo_list" {
+        return todo_list(t)
+    }
+    if intent == "todo_done" {
+        return todo_done(t, int(str(act.get("id", 0))))
+    }
+    if intent == "todo_del" {
+        return todo_del(t, int(str(act.get("id", 0))))
+    }
+    return ""
+}
+
+def llm(opts: dict[str, any], prompt: str) -> str {
+    return str(ask_llm(prompt, opts))
+}
+
+def run_turn(t: dict[str, any], mem: dict[str, any], user_msg: str) -> str {
+    remember(mem, "user", user_msg)
+    act_raw: str = llm(LLM_OPTS, brain_prompt(mem, user_msg))
+    act: dict[str, any] = parse_action(act_raw)
+    intent: str = str(act.get("intent", "chat"))
+    result: str = run_tool(t, act)
+    reply: str = ""
+    if result == "" {
+        reply = str(act.get("say", act_raw))
+    } else {
+        polish: str = "你是小助手。工具执行结果：\n" + result + "\n请用一句自然中文转述，不要编造，不要提 JSON。"
+        reply = llm(LLM_OPTS, polish)
+    }
+    remember(mem, "assistant", reply)
+    return reply
+}
+
+def is_quit(msg: str) -> bool {
+    if msg.contains("再见") {
+        return true
+    }
+    if msg.contains("退出") {
+        return true
+    }
+    return false
+}
+
+# ---------------------------------------------------------------------------
+# key 预检
+# ---------------------------------------------------------------------------
+
+def key_tail(k: str) -> str {
+    n: int = len(k)
+    if n <= 4 {
+        return k
+    }
+    return substring(k, n - 4, n)
+}
+
+def check_key() -> str {
+    load_env(".env", true)
+    k: str = ""
+    src: str = ""
+    k = str(env_get("LLM_API_KEY", ""))
+    if k != "" {
+        src = "LLM_API_KEY"
+    }
+    if k == "" {
+        k = str(env_get("API_KEY", ""))
+        if k != "" {
+            src = "API_KEY"
+        }
+    }
+    if k == "" {
+        k = str(env_get("DEEPSEEK_API_KEY", ""))
+        if k != "" {
+            src = "DEEPSEEK_API_KEY"
+        }
+    }
+    if k == "" {
+        print("未检测到 API key。任选其一：export LLM_API_KEY=sk-... 或建 .env 写 LLM_API_KEY=sk-...\n")
+        return ""
+    }
+    print("将使用 ", src, " 中的 key（尾号 ...", key_tail(k), "）\n")
+    return k
+}
+
+def main(args: list[str]) {
+    if check_key() == "" {
+        return
+    }
+    t: dict[str, any] = new_todos()
+    mem: dict[str, any] = new_memory()
+
+    print("========== 小助手 Agent CLI（输入 Ctrl+C 或说“再见/退出”结束） ==========\n")
+    print("示例：帮我记一条待办：xxx / 看看我的待办 / 完成第 1 条 / 删掉第 1 条 / 随便聊聊\n")
+
+    while true {
+        user_msg: str = input("你> ")
+        user_msg = trim(user_msg)
+        if user_msg == "" {
+            continue
+        }
+        if is_quit(user_msg) {
+            print("小助手：再见！\n")
+            break
+        }
+        print("（思考中…）\n")
+        reply: str = run_turn(t, mem, user_msg)
+        print("小助手> ", reply, "\n")
+    }
+}
