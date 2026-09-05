@@ -251,8 +251,35 @@
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
       </plugin>
-      <!-- Maven Assembly Plugin - package all dependencies into a runnable JAR -->
-      
+      <!-- Maven Assembly Plugin - package all dependencies into a runnable JAR
+           (produces target/jimlang-1.0-SNAPSHOT-jar-with-dependencies.jar which
+           bin/jimlang.*, build_win.bat and the vsix tooling all expect).
+           attach=false keeps the fat jar out of the deployed artifacts. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>3.6.0</version>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <attach>false</attach>
+          <archive>
+            <manifest>
+              <mainClass>com.dafei1288.jimlang.Main</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <id>fat-jar</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <distributionManagement>
