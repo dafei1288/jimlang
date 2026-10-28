@@ -90,3 +90,8 @@ node_modules/
 examples/.env_llm
 build/
 out/
+
+# local secrets & generated artifacts
+.env
+ext/
+out_*.jim
