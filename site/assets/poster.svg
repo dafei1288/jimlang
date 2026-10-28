@@ -1,0 +1,91 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" role="img" aria-label="JimLang 宣传海报">
+  <defs>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap');
+      .disp { font-family: 'Space Grotesk', 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+      .mono { font-family: 'JetBrains Mono', 'Cascadia Code', Consolas, monospace; }
+    </style>
+    <pattern id="grid" width="56" height="56" patternUnits="userSpaceOnUse">
+      <path d="M56 0H0V56" fill="none" stroke="#FFFFFF" stroke-opacity="0.035"/>
+    </pattern>
+    <radialGradient id="fade" cx="42%" cy="30%" r="80%">
+      <stop offset="25%" stop-color="#FFFFFF"/>
+      <stop offset="72%" stop-color="#000000"/>
+    </radialGradient>
+    <mask id="gridMask"><rect width="1600" height="900" fill="url(#fade)"/></mask>
+    <radialGradient id="glowTR" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#C8F04B" stop-opacity="0.13"/>
+      <stop offset="100%" stop-color="#C8F04B" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="markGlow" cx="50%" cy="18%" r="85%">
+      <stop offset="0%" stop-color="#C8F04B" stop-opacity="0.20"/>
+      <stop offset="65%" stop-color="#C8F04B" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="edge" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#C8F04B" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#C8F04B"/>
+      <stop offset="100%" stop-color="#C8F04B" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- backdrop -->
+  <rect width="1600" height="900" fill="#0A0D12"/>
+  <rect width="1600" height="900" fill="url(#grid)" mask="url(#gridMask)"/>
+  <circle cx="1300" cy="140" r="560" fill="url(#glowTR)"/>
+  <circle cx="120" cy="860" r="420" fill="url(#glowTR)" opacity="0.5"/>
+  <rect x="0" y="898" width="1600" height="2" fill="url(#edge)" opacity="0.8"/>
+
+  <!-- brand -->
+  <g transform="translate(90,72) scale(1.125)">
+    <rect x="2" y="2" width="60" height="60" rx="16" fill="#0C1017"/>
+    <rect x="2" y="2" width="60" height="60" rx="16" fill="url(#markGlow)"/>
+    <rect x="2.5" y="2.5" width="59" height="59" rx="15.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.10"/>
+    <path d="M39 22 L39 37.5 C39 44.5 34.5 48.5 28 48.5 C24.6 48.5 21.9 47.3 20 45"
+          fill="none" stroke="#F4F7FB" stroke-width="6.5" stroke-linecap="round"/>
+    <rect x="35.25" y="9.5" width="7.5" height="7.5" rx="1.6" fill="#C8F04B"/>
+  </g>
+  <text x="186" y="118" class="disp" font-size="42" font-weight="700" fill="#E9EDF4" letter-spacing="-0.5">jim<tspan fill="#677183">lang</tspan></text>
+
+  <!-- headline -->
+  <text x="88" y="336" class="disp" font-size="92" font-weight="700" fill="#E9EDF4" letter-spacing="-1">一门住进 JVM 的</text>
+  <text x="88" y="452" class="disp" font-size="92" font-weight="700" fill="#C8F04B" letter-spacing="-1">小语言。</text>
+  <text x="90" y="528" class="disp" font-size="29" font-weight="500" fill="#9AA4B5">语法简洁 · 嵌入 Java · CLI/REPL · 内置 Web 服务 · JSR-223</text>
+
+  <!-- chips -->
+  <g class="mono" font-size="19">
+    <rect x="90" y="580" width="104" height="44" rx="22" fill="rgba(200,240,75,0.10)" stroke="rgba(200,240,75,0.4)"/>
+    <text x="142" y="609" fill="#C8F04B" text-anchor="middle">ANTLR4</text>
+    <rect x="208" y="580" width="116" height="44" rx="22" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.14)"/>
+    <text x="266" y="609" fill="#9AA4B5" text-anchor="middle">JSR-223</text>
+    <rect x="338" y="580" width="70" height="44" rx="22" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.14)"/>
+    <text x="373" y="609" fill="#9AA4B5" text-anchor="middle">LSP</text>
+    <rect x="422" y="580" width="116" height="44" rx="22" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.14)"/>
+    <text x="480" y="609" fill="#9AA4B5" text-anchor="middle">VS CODE</text>
+    <rect x="552" y="580" width="150" height="44" rx="22" fill="rgba(255,255,255,0.03)" stroke="rgba(255,255,255,0.14)"/>
+    <text x="627" y="609" fill="#9AA4B5" text-anchor="middle">APACHE-2.0</text>
+  </g>
+
+  <!-- code window -->
+  <g>
+    <rect x="940" y="250" width="560" height="384" rx="20" fill="#0F131B" stroke="rgba(235,240,250,0.10)"/>
+    <rect x="940" y="250" width="560" height="56" rx="20" fill="rgba(255,255,255,0.025)"/>
+    <rect x="940" y="286" width="560" height="20" fill="rgba(255,255,255,0.025)"/>
+    <line x1="940" y1="306" x2="1500" y2="306" stroke="rgba(235,240,250,0.08)"/>
+    <circle cx="972" cy="278" r="7" fill="#FF5F57"/>
+    <circle cx="996" cy="278" r="7" fill="#FEBC2E"/>
+    <circle cx="1020" cy="278" r="7" fill="#28C840"/>
+    <text x="1050" y="284" class="mono" font-size="16" fill="#677183">server.jim</text>
+    <g class="mono" font-size="22" fill="#C9D2E0">
+      <text x="976" y="360"><tspan fill="#C8F04B">function</tspan> <tspan fill="#93B8FF">api</tspan>(req) {</text>
+      <text x="976" y="402">    <tspan fill="#C8F04B">return</tspan> { ok: <tspan fill="#D2A8FF">true</tspan>, path: req.path }</text>
+      <text x="976" y="444">}</text>
+      <text x="976" y="508"><tspan fill="#93B8FF">start_webserver</tspan>(<tspan fill="#D2A8FF">8080</tspan>,</text>
+      <text x="976" y="550">    <tspan fill="#FFC978">"/api/ping"</tspan>, <tspan fill="#FFC978">"GET"</tspan>, api</text>
+      <text x="976" y="592">)</text>
+    </g>
+  </g>
+
+  <!-- url -->
+  <rect x="90" y="800" width="12" height="12" rx="2" fill="#C8F04B"/>
+  <text x="116" y="812" class="mono" font-size="24" fill="#677183">github.com/dafei1288/jimlang</text>
+</svg>
